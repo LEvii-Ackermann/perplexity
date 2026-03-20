@@ -1,12 +1,84 @@
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { AIMessage, HumanMessage, SystemMessage, tool, createAgent } from "langchain";
+import {ChatMistralAI} from "@langchain/mistralai";
+import {TavilySearch} from "@langchain/tavily"
 
-const model = new ChatGoogleGenerativeAI({
+
+const searchTool = new TavilySearch({
+  maxResults: 5,
+  "name": "search_internet",
+  description: "Search the internet for real-time information, news, and current events",
+});
+
+
+const geminiModel = new ChatGoogleGenerativeAI({
   model: "gemini-2.5-flash-lite",
   apiKey: process.env.GEMINI_API_KEY
 });
 
-export async function testAi() {
-    const response = await model.invoke("who is King Kohli?");
+const mistralModel = new ChatMistralAI({
+  model: "mistral-small-latest",
+  apiKey: process.env.MISTRAL_API_KEY,
+  temperature: 0,
+  streaming: false
+})
 
-    console.log(response.text)
+
+const agent = createAgent({
+  model: mistralModel,
+  tools: [searchTool],
+  systemPrompt:  `
+    You are an AI assistant with access to tools.
+
+    IMPORTANT RULES:
+    - For any question requiring current information, news, or internet data → ALWAYS use the search tool
+    - NEVER make up answers when search is required
+    RULES:
+    - For news queries → use search tool ONLY ONCE
+    - Do NOT call search multiple times
+    - Use best possible query in first attempt
+    - Then summarize results clearly
+`,
+})
+
+
+export async function generateResponse(messages){
+  const formattedMessages = messages
+    .map(msg => {
+      if(msg.role === "user") return new HumanMessage(msg.content)
+      if(msg.role === "ai") return new AIMessage(msg.content)
+      return null
+    })
+    .filter(Boolean) 
+
+  const response = await agent.invoke({
+    messages: formattedMessages
+  })
+
+
+  const finalText =
+    response.text ||
+    response.output ||
+    response.messages
+    ?.slice()
+    .reverse()
+    .find(msg => msg.content && msg.content.trim() !== "")
+    ?.content ||
+    "No response generated"
+
+  return finalText
+}
+
+export async function genertateTitle(message){
+    const response = await mistralModel.invoke([
+      new SystemMessage(`You are a helpful assistant that generates concise and relevant titles for the given conversations.
+        
+        User will provide you with the first message of the conversation and you will generate a title for that conversation. The title should be concise, relevant, and should capture the essence of the conversation in 2-3 words.
+        `),
+        new HumanMessage(`Generate a title for a chat conversation based on the following first message: 
+          "${message}"
+          `)
+    ])
+
+    return response.text
 }

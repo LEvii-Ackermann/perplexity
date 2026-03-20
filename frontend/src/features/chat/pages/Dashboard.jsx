@@ -6,13 +6,15 @@ import { useEffect } from 'react'
 const Dashboard = () => {
 
   const chat = useChat()
-  const user = useSelector(state => state.auth?.user)
+  const user = useSelector((state) => {
+    return state.auth?.user
+  })
 
   useEffect(() => {
     chat.initializeSocketConnection()
   }, [])
   
-  console.log(user)
+  console.log("User: ", user)
 
   return (
     <div>Dashboard</div>

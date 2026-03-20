@@ -37,7 +37,9 @@ export async function registerController (req, res, next) {
     })
 
     const emailVerificationToken = jwt.sign({
-        email: user.email
+        email: user.email,
+        username: user.username,
+        id: user._id
     }, process.env.JWT_SECRET)
 
     await sendEmail({
