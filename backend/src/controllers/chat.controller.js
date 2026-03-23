@@ -7,6 +7,17 @@ export async function sendMessageController (req, res, next) {
     const { message, chatId } = req.body
 
     let title = null, chat = null;
+
+    if (chatId) {
+        chat = await chatModel.findById(chatId);
+
+        if (!chat) {
+            return res.status(404).json({
+                message: "Chat not found"
+            });
+        }
+    }
+
     if(!chatId){
         title = await genertateTitle(message)
         chat = await chatModel.create({

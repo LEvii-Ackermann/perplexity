@@ -2,8 +2,11 @@ import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { AIMessage, HumanMessage, SystemMessage, tool, createAgent } from "langchain";
 import {ChatMistralAI} from "@langchain/mistralai";
 import {TavilySearch} from "@langchain/tavily"
+import { sendEmail } from "./mail.service.js";
+import * as z from "zod"
 
 
+//live search tool
 const searchTool = new TavilySearch({
   maxResults: 5,
   "name": "search_internet",
@@ -11,11 +14,26 @@ const searchTool = new TavilySearch({
 });
 
 
+//sendEmailTool
+const sendingEmailTool = tool(sendEmail, {
+  name: "sendEmail",
+  description: "A tool to send email ",
+  schema: z.object({
+    to: z.string().describe("Recipient's email address"),
+    subject: z.string().describe("Subject of the email"),
+    html: z.string().describe("HTML content of the email"),
+  }),
+});
+
+
+//gemini model. Currently not doing anyhting 
 const geminiModel = new ChatGoogleGenerativeAI({
   model: "gemini-2.5-flash-lite",
   apiKey: process.env.GEMINI_API_KEY
 });
 
+
+//mistral model
 const mistralModel = new ChatMistralAI({
   model: "mistral-small-latest",
   apiKey: process.env.MISTRAL_API_KEY,
@@ -24,9 +42,10 @@ const mistralModel = new ChatMistralAI({
 })
 
 
+//agent created to use the tools
 const agent = createAgent({
   model: mistralModel,
-  tools: [searchTool],
+  tools: [searchTool, sendingEmailTool],
   systemPrompt:  `
     You are an AI assistant with access to tools.
 
@@ -42,6 +61,7 @@ const agent = createAgent({
 })
 
 
+//main function which is used to generate the responses
 export async function generateResponse(messages){
   const formattedMessages = messages
     .map(msg => {
@@ -69,6 +89,8 @@ export async function generateResponse(messages){
   return finalText
 }
 
+
+//function to generate the title
 export async function genertateTitle(message){
     const response = await mistralModel.invoke([
       new SystemMessage(`You are a helpful assistant that generates concise and relevant titles for the given conversations.
