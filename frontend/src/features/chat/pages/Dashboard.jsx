@@ -3,6 +3,8 @@ import { useChat } from "../hooks/useChat.js";
 import { useSelector } from "react-redux";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 // Icons
 const PlusIcon = () => (
@@ -117,32 +119,21 @@ const MenuIcon = () => (
   </svg>
 );
 
-// Render markdown-ish bold text
-function renderContent(text) {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
-  return parts.map((part, i) => {
-    if (part.startsWith("**") && part.endsWith("**")) {
-      return (
-        <strong key={i} className="font-semibold">
-          {part.slice(2, -2)}
-        </strong>
-      );
-    }
-    return part.split("\n").map((line, j, arr) => (
-      <span key={`${i}-${j}`}>
-        {line}
-        {j < arr.length - 1 && <br />}
-      </span>
-    ));
-  });
-}
+
 export default function ChatDashboard() {
   const [input, setInput] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const textareaRef = useRef(null);
   const bottomRef = useRef(null);
 
-  const { handleSendMessage, handleGetChats, initializeSocketConnection, handleGetMessages, handleDeleteChat, handleNewChat } = useChat();
+  const {
+    handleSendMessage,
+    handleGetChats,
+    initializeSocketConnection,
+    handleGetMessages,
+    handleDeleteChat,
+    handleNewChat,
+  } = useChat();
 
   const chats = useSelector((state) => state.chat.chats);
   const currentChatId = useSelector((state) => state.chat.currentChatId);
@@ -165,9 +156,9 @@ export default function ChatDashboard() {
   }, [input]);
 
   useEffect(() => {
-    handleGetChats()
-    initializeSocketConnection()
-  }, [])
+    handleGetChats();
+    initializeSocketConnection();
+  }, []);
 
   // send message
   const handleSend = async (e) => {
@@ -176,16 +167,16 @@ export default function ChatDashboard() {
     const messageText = input.trim();
 
     const newChatId = await handleSendMessage({
-    message: messageText,
-    chatId: currentChatId,
-  });
+      message: messageText,
+      chatId: currentChatId,
+    });
 
     setInput("");
   };
 
   const openChat = (chatId) => {
-    handleGetMessages(chatId)
-  }
+    handleGetMessages(chatId);
+  };
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -195,8 +186,8 @@ export default function ChatDashboard() {
   };
 
   const removeChat = (chatId) => {
-    handleDeleteChat(chatId)
-  }
+    handleDeleteChat(chatId);
+  };
 
   return (
     <div className="flex h-screen bg-[#121212] text-white">
@@ -216,15 +207,22 @@ export default function ChatDashboard() {
           )}
 
           {Object.values(chats).map((chat) => (
-            <div key={chat.id} className="flex px-3 cursor-pointer py-2 text-sm text-white/60" onClick={() => {openChat(chat.id)}}>
-              <ChatIcon /> {chat.title} 
-              <button onClick={(e) => {
-                e.stopPropagation();
-                removeChat(chat.id);
-              }}>
+            <div
+              key={chat.id}
+              className="flex px-3 cursor-pointer py-2 text-sm text-white/60"
+              onClick={() => {
+                openChat(chat.id);
+              }}
+            >
+              <ChatIcon /> {chat.title}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removeChat(chat.id);
+                }}
+              >
                 <TrashIcon />
               </button>
-
             </div>
           ))}
         </div>
@@ -263,7 +261,27 @@ export default function ChatDashboard() {
                   </div>
 
                   <div className="bg-[#1e1e1e] px-4 py-3 rounded-2xl text-sm prose prose-invert max-w-none">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        code({ inline, className, children }) {
+                          const match = /language-(\w+)/.exec(className || "");
+
+                          return !inline && match ? (
+                            <SyntaxHighlighter
+                              style={oneDark}
+                              language={match[1]}
+                            >
+                              {String(children).replace(/\n$/, "")}
+                            </SyntaxHighlighter>
+                          ) : (
+                            <code className="bg-gray-800 px-1 py-0.5 rounded">
+                              {children}
+                            </code>
+                          );
+                        },
+                      }}
+                    >
                       {msg.content}
                     </ReactMarkdown>
                   </div>
