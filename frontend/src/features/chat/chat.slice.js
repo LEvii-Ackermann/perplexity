@@ -29,6 +29,10 @@ import {createSlice} from "@reduxjs/toolkit"
                 const {chatId, messages} = action.payload
                 state.chats[chatId].messages = messages;
             },
+            deleteChatReducer: (state, action) => {
+                const chatId = action.payload
+                delete state.chats[chatId]
+            },
             setChats: (state, action) => {
                 state.chats = action.payload
             },
@@ -44,7 +48,7 @@ import {createSlice} from "@reduxjs/toolkit"
     }
 })
 
-export const {setChats, setCurrentChatId, setError, setLoading, createNewChat, addNewMessage, getChatMessages} = chatSlice.actions
+export const {setChats, setCurrentChatId, setError, setLoading, createNewChat, addNewMessage, getChatMessages, deleteChatReducer} = chatSlice.actions
 export default chatSlice.reducer
 
 

@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useChat } from "../hooks/useChat.js";
 import { useSelector } from "react-redux";
-
-// Mock data
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 // Icons
 const PlusIcon = () => (
@@ -142,7 +142,7 @@ export default function ChatDashboard() {
   const textareaRef = useRef(null);
   const bottomRef = useRef(null);
 
-  const { handleSendMessage, handleGetChats, initializeSocketConnection, handleGetMessages } = useChat();
+  const { handleSendMessage, handleGetChats, initializeSocketConnection, handleGetMessages, handleDeleteChat, handleNewChat } = useChat();
 
   const chats = useSelector((state) => state.chat.chats);
   const currentChatId = useSelector((state) => state.chat.currentChatId);
@@ -150,8 +150,6 @@ export default function ChatDashboard() {
 
   // ✅ FIX: messages from redux
   const messages = chats[currentChatId]?.messages || [];
-
-  console.log("Sending chatId:", currentChatId);
 
   // scroll
   useEffect(() => {
@@ -182,8 +180,6 @@ export default function ChatDashboard() {
     chatId: currentChatId,
   });
 
-  console.log("Updated chatId:", newChatId); // ✅ debug
-
     setInput("");
   };
 
@@ -197,6 +193,10 @@ export default function ChatDashboard() {
       handleSend();
     }
   };
+
+  const removeChat = (chatId) => {
+    handleDeleteChat(chatId)
+  }
 
   return (
     <div className="flex h-screen bg-[#121212] text-white">
@@ -217,7 +217,14 @@ export default function ChatDashboard() {
 
           {Object.values(chats).map((chat) => (
             <div key={chat.id} className="flex px-3 cursor-pointer py-2 text-sm text-white/60" onClick={() => {openChat(chat.id)}}>
-              <ChatIcon /> {chat.title}
+              <ChatIcon /> {chat.title} 
+              <button onClick={(e) => {
+                e.stopPropagation();
+                removeChat(chat.id);
+              }}>
+                <TrashIcon />
+              </button>
+
             </div>
           ))}
         </div>
@@ -233,6 +240,9 @@ export default function ChatDashboard() {
           <span className="text-sm text-white/40">
             {chats[currentChatId]?.title || "New Chat"}
           </span>
+          <button onClick={handleNewChat}>
+            <PlusIcon />
+          </button>
         </header>
 
         {/* Messages */}
@@ -252,8 +262,10 @@ export default function ChatDashboard() {
                     {msg.role === "user" ? "N" : <BotIcon />}
                   </div>
 
-                  <div className="bg-[#1e1e1e] px-4 py-3 rounded-2xl text-sm">
-                    {renderContent(msg.content)}
+                  <div className="bg-[#1e1e1e] px-4 py-3 rounded-2xl text-sm prose prose-invert max-w-none">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {msg.content}
+                    </ReactMarkdown>
                   </div>
                 </div>
               ))}

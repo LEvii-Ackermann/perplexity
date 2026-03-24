@@ -6,12 +6,13 @@ import {
   setLoading,
   createNewChat,
   addNewMessage,
-  getChatMessages
+  getChatMessages,
+  deleteChatReducer
 } from "../chat.slice.js";
 import {
   sendMessage,
   getChats,
-  deleteMessages,
+  deleteChat,
   getMessages,
 } from "../service/chat.api.js";
 import { useDispatch } from "react-redux";
@@ -114,10 +115,34 @@ export const useChat = () => {
     }
   };
 
+const handleDeleteChat = async (chatId) => {
+
+  try {
+    dispatch(setLoading(true))
+
+    await deleteChat(chatId)
+
+    dispatch(deleteChatReducer(chatId)) // optimistic update
+    console.log("API called successfully") // 👈 ADD THIS
+  }
+  catch (error) {
+    dispatch(setError(error.message))
+  }
+  finally {
+    dispatch(setLoading(false))
+  }
+}
+
+  const handleNewChat = () => {
+    dispatch(setCurrentChatId(null));
+  };
+
   return {
     initializeSocketConnection,
     handleSendMessage,
     handleGetChats,
-    handleGetMessages
+    handleGetMessages,
+    handleDeleteChat,
+    handleNewChat
   };
 };

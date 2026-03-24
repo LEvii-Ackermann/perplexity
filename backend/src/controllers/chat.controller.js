@@ -1,5 +1,4 @@
-import { generateResponse } from "../services/ai.service.js"
-import { genertateTitle } from "../services/ai.service.js"
+import { generateResponse, generateTitle } from "../services/ai.service.js"
 import chatModel from "../models/chat.model.js"
 import messageModel from "../models/message.model.js"
 
@@ -16,10 +15,16 @@ export async function sendMessageController (req, res, next) {
                 message: "Chat not found"
             });
         }
+
+        if (chat.user.toString() !== req.user.id) {
+            return res.status(403).json({
+                message: "Unauthorized"
+            });
+        }
     }
 
     if(!chatId){
-        title = await genertateTitle(message)
+        title = await generateTitle(message)
         chat = await chatModel.create({
             user: req.user.id,
             title: title

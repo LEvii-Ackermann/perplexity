@@ -91,7 +91,7 @@ export async function generateResponse(messages){
 
 
 //function to generate the title
-export async function genertateTitle(message){
+export async function generateTitle(message){
     const response = await mistralModel.invoke([
       new SystemMessage(`You are a helpful assistant that generates concise and relevant titles for the given conversations.
         
