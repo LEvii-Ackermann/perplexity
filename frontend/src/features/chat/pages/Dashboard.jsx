@@ -48,6 +48,13 @@ const LogoutIcon = () => (
     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
   </svg>
 );
+const CopyIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+  >
+    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1-2 2h9a2 2 0 0 1 2 2v1"></path>
+  </svg>
+);
 
 // ── Suggestions ───────────────────────────────────────────────────────────────
 const SUGGESTIONS = [
@@ -237,8 +244,22 @@ export default function ChatDashboard() {
           borderRight: "1px solid var(--border)",
           display: "flex", flexDirection: "column",
         }}>
-          <div style={{ padding: "16px 12px 12px", borderBottom: "1px solid var(--border)", flexShrink: 0 }}>
-            <button className="new-chat-btn" onClick={handleNewChat}><PlusIcon /> New thread</button>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              padding: "11px 16px",
+              borderBottom: "1px solid var(--border)",
+              height: "53px",
+              fontSize: "0.85rem",
+              fontWeight: "600",
+              color: "var(--text)",
+            }}
+          >
+            Naved AI
+          </div>
+          <div style={{ padding: "16px 12px 1px", flexShrink: 0 }}>
+            <button className="new-chat-btn" onClick={handleNewChat}><PlusIcon /> New chat</button>
           </div>
 
           <div style={{ flex: 1, overflowY: "auto", padding: "4px 8px 8px" }}>
@@ -323,7 +344,7 @@ export default function ChatDashboard() {
             <>
               {/* ── Messages ── */}
               <div style={{ flex: 1, overflowY: "auto" }}>
-                <div style={{ maxWidth: "720px", margin: "0 auto", padding: "28px 24px", display: "flex", flexDirection: "column", gap: "20px" }}>
+                <div style={{ maxWidth: "800px", margin: "0 auto", padding: "28px 24px", display: "flex", flexDirection: "column", gap: "20px" }}>
                   {messages.map((msg, index) => (
                     <div key={index} className="msg-appear" style={{ display: "flex", gap: "11px", flexDirection: msg.role === "user" ? "row-reverse" : "row", alignItems: "flex-start" }}>
                       <div className={`avatar ${msg.role === "user" ? "avatar-user" : "avatar-bot"}`}>
@@ -333,7 +354,7 @@ export default function ChatDashboard() {
                         {msg.role === "user" ? (
                           <div className="msg-user">{msg.content}</div>
                         ) : (
-                          <div className="msg-bot chat-prose">
+                          <div className="chat-prose" style={{ padding: "4px 0" }}>
                             <ReactMarkdown
                               remarkPlugins={[remarkGfm]}
                               skipHtml={true}
@@ -350,16 +371,26 @@ export default function ChatDashboard() {
                                           position: "absolute",
                                           top: "6px",
                                           right: "6px",
-                                          fontSize: "0.7rem",
-                                          background: "#333",
-                                          color: "#fff",
-                                          border: "none",
-                                          padding: "3px 6px",
-                                          borderRadius: "4px",
+                                          background: "rgba(255,255,255,0.08)",
+                                          border: "1px solid rgba(255,255,255,0.15)",
+                                          borderRadius: "6px",
+                                          padding: "4px",
                                           cursor: "pointer",
+                                          display: "flex",
+                                          alignItems: "center",
+                                          justifyContent: "center",
+                                          color: "#ccc",
+                                        }}
+                                        onMouseEnter={(e) => {
+                                          e.currentTarget.style.background = "rgba(255,255,255,0.15)";
+                                          e.currentTarget.style.color = "#fff";
+                                        }}
+                                        onMouseLeave={(e) => {
+                                          e.currentTarget.style.background = "rgba(255,255,255,0.08)";
+                                          e.currentTarget.style.color = "#ccc";
                                         }}
                                       >
-                                        Copy
+                                        <CopyIcon />
                                       </button>
 
                                       <SyntaxHighlighter style={oneDark} language={language}>
@@ -399,7 +430,7 @@ export default function ChatDashboard() {
 
               {/* ── Bottom Input ── */}
               <div style={{ padding: "12px 24px 18px", flexShrink: 0, background: "var(--bg)" }}>
-                <div style={{ maxWidth: "720px", margin: "0 auto" }}>
+                <div style={{ maxWidth: "800px", margin: "0 auto" }}>
                   <div className="input-wrap">
                     <textarea
                       ref={textareaRef}
