@@ -336,14 +336,43 @@ export default function ChatDashboard() {
                           <div className="msg-bot chat-prose">
                             <ReactMarkdown
                               remarkPlugins={[remarkGfm]}
+                              skipHtml={true}
                               components={{
                                 code({ inline, className, children }) {
                                   const match = /language-(\w+)/.exec(className || "");
-                                  return !inline && match ? (
-                                    <SyntaxHighlighter style={oneDark} language={match[1]}>
-                                      {String(children).replace(/\n$/, "")}
-                                    </SyntaxHighlighter>
-                                  ) : <code>{children}</code>;
+                                  const language = match ? match[1] : "javascript";
+
+                                  return !inline ? (
+                                    <div style={{ position: "relative" }}>
+                                      <button
+                                        onClick={() => navigator.clipboard.writeText(children)}
+                                        style={{
+                                          position: "absolute",
+                                          top: "6px",
+                                          right: "6px",
+                                          fontSize: "0.7rem",
+                                          background: "#333",
+                                          color: "#fff",
+                                          border: "none",
+                                          padding: "3px 6px",
+                                          borderRadius: "4px",
+                                          cursor: "pointer",
+                                        }}
+                                      >
+                                        Copy
+                                      </button>
+
+                                      <SyntaxHighlighter style={oneDark} language={language}>
+                                        {String(children).replace(/\n$/, "")}
+                                      </SyntaxHighlighter>
+                                    </div>
+                                  ) : (
+                                        <code
+                                          style={{background: "rgba(255,255,255,0.08)", padding: "2px 6px", borderRadius: "4px", fontSize: "0.8rem", fontFamily: "monospace",}}
+                                        >
+                                          {children}
+                                        </code>
+                                      );
                                 },
                               }}
                             >
