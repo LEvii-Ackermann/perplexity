@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken"
 import bcrypt from "bcrypt"
 import { sendEmail } from "../services/mail.service.js"
 import dotenv from "dotenv"
+import redis from "../config/cache.js"
 
 dotenv.config() 
 
@@ -174,5 +175,16 @@ export async function getMeController(req, res, next){
             username: user.username,
             email: user.email
         }
+    })
+}
+
+export async function logoutController(req, res, next){
+    const token = req.cookies.token
+
+    res.clearCookie("token")
+    await redis.set(token, Date.now().toString())
+
+    res.status(200).json({
+        message: "logout user successfully"
     })
 }

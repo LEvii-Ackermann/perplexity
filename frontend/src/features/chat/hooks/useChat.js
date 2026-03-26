@@ -15,45 +15,57 @@ import {
   deleteChat,
   getMessages,
 } from "../service/chat.api.js";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 
 export const useChat = () => {
   const dispatch = useDispatch();
+  const chats = useSelector((state) => state.chat.chats);
 
   const handleSendMessage = async ({ message, chatId }) => {
     try {
       dispatch(setLoading(true));
-      const data = await sendMessage({ message, chatId });
-      const { chat, aiMessage } = data;
 
-      const finalChatId = chatId || chat._id;  
-
-      if(!chatId){
+      let finalChatId = chatId;
+      if (!chatId) {
+        const tempChatId = 'temp-' + Date.now();
         dispatch(
-            createNewChat({
-            chatId: chat._id,
-            title: chat.title,
-            }),
+          createNewChat({
+            chatId: tempChatId,
+            title: 'New Chat',
+          }),
         );
+        dispatch(setCurrentChatId(tempChatId));
+        finalChatId = tempChatId;
       }
 
       dispatch(
         addNewMessage({
-          chatId: chatId || chat._id,
+          chatId: finalChatId,
           content: message,
           role: "user",
         }),
       );
 
+      const data = await sendMessage({ message, chatId });
+      const { chat, aiMessage } = data;
+
+      const realChatId = chat._id;
+      if (!chatId) {
+        const updated = { ...chats };
+        updated[realChatId] = { ...updated[finalChatId], id: realChatId, title: chat.title };
+        delete updated[finalChatId];
+        dispatch(setChats(updated));
+        dispatch(setCurrentChatId(realChatId));
+        finalChatId = realChatId;
+      }
+
       dispatch(
         addNewMessage({
-          chatId: chatId || chat._id,
+          chatId: finalChatId,
           content: aiMessage.content,
           role: aiMessage.role,
         }),
       );
-
-      dispatch(setCurrentChatId(finalChatId));
 
       return finalChatId;
     } catch (error) {

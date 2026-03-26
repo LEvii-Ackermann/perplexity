@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken"
 import dotenv from "dotenv"
+import redis from "../config/cache.js"
 
 dotenv.config()
 
@@ -12,6 +13,15 @@ export async function identifyUser(req, res, next){
             success: false
         })
     }
+
+    const isBlackListed = await redis.get(token)
+
+    if(isBlackListed){
+        return res.status(401).json({
+            message: "This token is blacklisted"
+        })
+    }
+
 
     let decoded;
     try {

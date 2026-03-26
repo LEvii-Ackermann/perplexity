@@ -160,12 +160,22 @@ const STYLES = `
 function StyleInjector() {
   useEffect(() => {
     const id = "naved-styles-v2";
-    if (!document.getElementById(id)) {
-      const el = document.createElement("style");
-      el.id = id; el.textContent = STYLES;
+
+    let el = document.getElementById(id);
+
+    if (!el) {
+      el = document.createElement("style");
+      el.id = id;
+      el.textContent = STYLES;
       document.head.appendChild(el);
     }
+
+    // ✅ CLEANUP (IMPORTANT)
+    return () => {
+      el.remove();
+    };
   }, []);
+
   return null;
 }
 
@@ -176,6 +186,8 @@ export default function ChatDashboard() {
   const textareaRef = useRef(null);
   const lgTextareaRef = useRef(null);
   const bottomRef = useRef(null);
+  const messagesRef = useRef(null);
+  const lastUserMessageRef = useRef(null);
   const navigate = useNavigate();
 
   const { handleSendMessage, handleGetChats, initializeSocketConnection, handleGetMessages, handleDeleteChat, handleNewChat } = useChat();
@@ -189,7 +201,14 @@ export default function ChatDashboard() {
   const messages = chats[currentChatId]?.messages || [];
   const hasMessages = messages.length > 0;
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+  useEffect(() => {
+    if (messages.length > 0 && messages[messages.length - 1].role === "user") {
+      lastUserMessageRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    }
+  }, [messages]);
 
   useEffect(() => {
     [textareaRef, lgTextareaRef].forEach(ref => {
@@ -207,6 +226,13 @@ export default function ChatDashboard() {
     const messageText = input.trim();
     setInput("");
     await handleSendMessage({ message: messageText, chatId: currentChatId });
+
+    setTimeout(() => {
+      lastUserMessageRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    }, 50);
   };
 
   const handleKeyDown = (e) => {
@@ -223,8 +249,14 @@ export default function ChatDashboard() {
 
   const onLogout = async () => {
     await handleLogout();
-    navigate("/login");
+    navigate("/login", { replace: true });
   };
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/login", { replace: true });
+    }
+  }, [loading, user, navigate]);
 
   const userInitial = user?.username?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || "U";
   const userName = user?.username || user?.email?.split("@")[0] || "User";
@@ -343,7 +375,7 @@ export default function ChatDashboard() {
           ) : (
             <>
               {/* ── Messages ── */}
-              <div style={{ flex: 1, overflowY: "auto" }}>
+              <div ref={messagesRef} style={{ flex: 1, overflowY: "auto" }}>
                 <div style={{ maxWidth: "800px", margin: "0 auto", padding: "28px 24px", display: "flex", flexDirection: "column", gap: "20px" }}>
                   {messages.map((msg, index) => (
                     <div key={index} className="msg-appear" style={{ display: "flex", gap: "11px", flexDirection: msg.role === "user" ? "row-reverse" : "row", alignItems: "flex-start" }}>
@@ -352,7 +384,7 @@ export default function ChatDashboard() {
                       </div>
                       <div style={{ maxWidth: "calc(100% - 42px)" }}>
                         {msg.role === "user" ? (
-                          <div className="msg-user">{msg.content}</div>
+                          <div ref={index === messages.length - 1 ? lastUserMessageRef : null} className="msg-user">{msg.content}</div>
                         ) : (
                           <div className="chat-prose" style={{ padding: "4px 0" }}>
                             <ReactMarkdown

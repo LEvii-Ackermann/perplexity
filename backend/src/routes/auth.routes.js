@@ -1,5 +1,5 @@
 import express from "express"
-import { getMeController, loginController, registerController, verifyEmailController } from "../controllers/auth.controller.js"
+import { getMeController, loginController, registerController, verifyEmailController, logoutController } from "../controllers/auth.controller.js"
 import { loginValidator, registerValidator } from "../validators/auth.validator.js"
 import { identifyUser } from "../middlewares/auth.middleware.js"
 
@@ -33,5 +33,8 @@ authRouter.post("/login",loginValidator ,loginController)
  * @access Private
  */
 authRouter.get("/get-me", identifyUser, getMeController)
+
+
+authRouter.get("/logout", identifyUser, logoutController)
 
 export default authRouter

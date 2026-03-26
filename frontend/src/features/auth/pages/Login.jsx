@@ -38,7 +38,7 @@ const Login = () => {
   };
 
   if(!loading && user){
-    return <Navigate to="/" />
+    return <Navigate to="/" replace />
   }
 
   return (
