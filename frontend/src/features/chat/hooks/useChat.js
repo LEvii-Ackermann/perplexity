@@ -7,7 +7,8 @@ import {
   createNewChat,
   addNewMessage,
   getChatMessages,
-  deleteChatReducer
+  deleteChatReducer,
+  replaceTempChat
 } from "../chat.slice.js";
 import {
   sendMessage,
@@ -51,10 +52,11 @@ export const useChat = () => {
 
       const realChatId = chat._id;
       if (!chatId) {
-        const updated = { ...chats };
-        updated[realChatId] = { ...updated[finalChatId], id: realChatId, title: chat.title };
-        delete updated[finalChatId];
-        dispatch(setChats(updated));
+        dispatch(replaceTempChat({
+          tempChatId: finalChatId,
+          realChatId,
+          title: chat.title
+        }));
         dispatch(setCurrentChatId(realChatId));
         finalChatId = realChatId;
       }
@@ -134,8 +136,7 @@ const handleDeleteChat = async (chatId) => {
 
     await deleteChat(chatId)
 
-    dispatch(deleteChatReducer(chatId)) // optimistic update
-    console.log("API called successfully") // 👈 ADD THIS
+    dispatch(deleteChatReducer(chatId)) 
   }
   catch (error) {
     dispatch(setError(error.message))

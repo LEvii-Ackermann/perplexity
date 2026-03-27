@@ -3,6 +3,7 @@ import { AIMessage, HumanMessage, SystemMessage, tool, createAgent } from "langc
 import {ChatMistralAI} from "@langchain/mistralai";
 import {TavilySearch} from "@langchain/tavily"
 import { sendEmail } from "./mail.service.js";
+import {runCode} from "../tools/codeTool.js"
 import * as z from "zod"
 
 
@@ -11,6 +12,17 @@ const searchTool = new TavilySearch({
   maxResults: 5,
   "name": "search_internet",
   description: "Search the internet for real-time information, news, and current events",
+});
+
+
+//code execution tool
+const codeExecutionTool = tool(runCode, {
+  name: "run_code",
+  description: "Execute code in different programming languages and return output",
+  schema: z.object({
+    code: z.string().describe("The code to execute"),
+    language: z.string().describe("Programming language like java, python, javascript, cpp")
+  }),
 });
 
 
@@ -45,13 +57,26 @@ const mistralModel = new ChatMistralAI({
 //agent created to use the tools
 const agent = createAgent({
   model: mistralModel,
-  tools: [searchTool, sendingEmailTool],
+  tools: [searchTool, sendingEmailTool, codeExecutionTool],
   systemPrompt:  `
     You are an AI assistant with access to tools.
 
     IMPORTANT RULES:
     - For any question requiring current information, news, or internet data → ALWAYS use the search tool
     - NEVER make up answers when search is required
+
+    - If the user provides code (even without explicitly asking to run it) → ALWAYS use the run_code tool
+    - Detect the programming language from the code syntax
+    - If the language is unclear, assume a reasonable default
+
+    - If the user asks to explain code → DO NOT run it
+    - If the user asks to run/execute code → MUST use run_code tool
+
+    - Return ONLY the output from the tool in a clean format
+    - Do NOT add explanations like "code executed successfully"
+    
+    - If the user asks to SEND email, SEND an email using the sendEmail tool
+
     RULES:
     - For news queries → use search tool ONLY ONCE
     - Do NOT call search multiple times

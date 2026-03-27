@@ -112,6 +112,9 @@ const STYLES = `
 
   .chat-prose p { line-height:1.78; margin-bottom:0.55em; font-size:0.875rem; }
   .chat-prose p:last-child { margin-bottom:0; }
+  .msg-user .chat-prose {
+    white-space: pre-wrap;
+  }
   .chat-prose pre { border-radius:10px; overflow:hidden; margin:0.75em 0; }
   .chat-prose ul,.chat-prose ol { padding-left:1.4em; margin-bottom:0.6em; font-size:0.875rem; line-height:1.78; }
   .chat-prose li { margin-bottom:0.2em; }
@@ -384,13 +387,16 @@ export default function ChatDashboard() {
                       </div>
                       <div style={{ maxWidth: "calc(100% - 42px)" }}>
                         {msg.role === "user" ? (
-                          <div ref={index === messages.length - 1 ? lastUserMessageRef : null} className="msg-user">{msg.content}</div>
+                          <div ref={index === messages.length - 1 ? lastUserMessageRef : null} className="msg-user"><div className="chat-prose">{msg.content}</div></div>
                         ) : (
                           <div className="chat-prose" style={{ padding: "4px 0" }}>
                             <ReactMarkdown
                               remarkPlugins={[remarkGfm]}
                               skipHtml={true}
                               components={{
+                                p({ children }) {
+                                  return <div>{children}</div>;
+                                },
                                 code({ inline, className, children }) {
                                   const match = /language-(\w+)/.exec(className || "");
                                   const language = match ? match[1] : "javascript";
