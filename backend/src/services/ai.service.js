@@ -11,6 +11,7 @@ import { TavilySearch } from "@langchain/tavily";
 import { sendEmail } from "./mail.service.js";
 import { runCode } from "../tools/codeTool.js";
 import { fileSystemTool } from "../tools/fileSystemTool.js";
+import { fileEditorTool } from "../tools/fileEditorTool.js";
 import * as z from "zod";
 
 //live search tool
@@ -65,6 +66,19 @@ const fileTool = tool(fileSystemTool, {
   }),
 });
 
+//fileEditorTool
+const fileEditor = tool(fileEditorTool, {
+  name: "file_editor",
+  description:
+    "Edit existing files by appending, replacing content, or modifying specific text",
+  schema: z.object({
+    action: z.enum(["append", "replace", "replace_text"]),
+    filePath: z.string(),
+    content: z.string().optional(),
+    target: z.string().optional(),
+    replacement: z.string().optional(),
+  }),
+});
 
 
 //gemini model. Currently not doing anyhting
@@ -84,7 +98,7 @@ const mistralModel = new ChatMistralAI({
 //agent created to use the tools
 const agent = createAgent({
   model: mistralModel,
-  tools: [searchTool, sendingEmailTool, codeExecutionTool, fileTool],
+  tools: [searchTool, sendingEmailTool, codeExecutionTool, fileTool, fileEditor],
   systemPrompt: `
     You are an AI assistant with access to tools.
 
@@ -117,6 +131,11 @@ const agent = createAgent({
 
     - Always generate clean relative file paths (e.g., "test/hello.txt")
     - NEVER access paths outside allowed directory
+
+    - If the user asks to modify or update an existing file → use file_editor tool
+    - Use "append" to add new content
+    - Use "replace" to overwrite entire file
+    - Use "replace_text" to change specific parts of file
 
     - Do NOT explain actions, just execute and return result
 

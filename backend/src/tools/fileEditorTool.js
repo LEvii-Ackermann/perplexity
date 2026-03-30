@@ -42,6 +42,9 @@ export const fileEditorTool = async ({
     }
 
     // 🔹 REPLACE SPECIFIC TEXT
+    if (action === "replace_text" && !fileData.includes(target)) {
+      return "Target text not found";
+    }
     if (action === "replace_text") {
       if (!target) {
         throw new Error("target text is required");

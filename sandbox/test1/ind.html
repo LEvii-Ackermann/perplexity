@@ -9,5 +9,13 @@
 <body>
     <button id="toggleButton">Click Me</button>
     <script src="script.js"></script>
+<button id="redButton" style="background-color: red; color: white; padding: 10px 20px; border: none; cursor: pointer;">Click Me</button>
+
+<script>
+document.getElementById("redButton").addEventListener("click", function() {
+    this.style.backgroundColor = "black";
+});
+</script>
+
 </body>
 </html>
