@@ -5,6 +5,7 @@ import morgan from "morgan"
 
 import authRouter from "./routes/auth.routes.js"
 import chatRouter from "./routes/chat.routes.js"
+import gameRouter from "./routes/game.routes.js"
 
 const app = express()
 app.use(express.json())
@@ -17,5 +18,6 @@ app.use(morgan("dev"))
 
 app.use("/api/auth", authRouter)
 app.use("/api/chats", chatRouter)
+app.use("/api/game", gameRouter)
 
 export default app
