@@ -180,9 +180,6 @@ export default function Game() {
           flexShrink: 0,
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <span style={{ fontSize: "1.2rem" }}>
-              {ITEMS.find(i => i.name === product)?.emoji ?? "🛍️"}
-            </span>
             <div>
               <div style={{ fontSize: "0.85rem", fontWeight: 600 }}>{product}</div>
               <div style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.35)" }}>
@@ -235,7 +232,7 @@ export default function Game() {
                   border:     msg.role === "ai" ? "1px solid rgba(249,115,22,0.25)" : "1px solid rgba(255,255,255,0.12)",
                 }}>
                   {msg.role === "ai"
-                    ? (ITEMS.find(i => i.name === product)?.emoji ?? "🧑‍💼")
+                    ? <BotIcon />
                     : "U"}
                 </div>
 

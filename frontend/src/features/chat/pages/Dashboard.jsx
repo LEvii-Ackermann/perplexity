@@ -138,6 +138,10 @@ const STYLES = `
   .send-btn:disabled { background:rgba(255,255,255,0.06); color:var(--muted); cursor:not-allowed; }
   .new-chat-btn { display:flex; align-items:center; gap:8px; padding:8px 11px; border-radius:9px; cursor:pointer; font-size:0.78rem; font-weight:500; color:var(--muted2); border:1px solid var(--border); background:transparent; transition:background 0.15s,color 0.15s,border-color 0.15s; width:100%; }
   .new-chat-btn:hover { background:rgba(255,255,255,0.05); color:var(--text); border-color:var(--border2); }
+  .new-chat-btn .text { transform: translateY(1.46px); font-size:0.8rem; margin-left: 2px;}
+
+  .game-mode-btn { font-size:0.72rem; font-weight:500; color:var(--muted2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; border:1px solid var(--border); background:transparent; padding:6px 12px; border-radius:8px; cursor:pointer; transition:background 0.15s,color 0.15s,border-color 0.15s; }
+  .game-mode-btn:hover { background:rgba(255,255,255,0.05); color:var(--text); border-color:var(--border2); }
 
   .input-wrap { border:1px solid var(--border2); border-radius:var(--radius); background:var(--surface2); transition:border-color 0.2s,box-shadow 0.2s; padding:10px 12px; display:flex; align-items:flex-end; gap:10px; }
   .input-wrap:focus-within { border-color:rgba(249,115,22,0.35); box-shadow:0 0 0 3px rgba(249,115,22,0.07); }
@@ -289,12 +293,17 @@ export default function ChatDashboard() {
               fontSize: "0.85rem",
               fontWeight: "600",
               color: "var(--text)",
+              cursor: "pointer",
             }}
+            onClick={handleNewChat}
           >
             Naved AI
           </div>
           <div style={{ padding: "16px 12px 1px", flexShrink: 0 }}>
-            <button className="new-chat-btn" onClick={handleNewChat}><PlusIcon /> New chat</button>
+            <button className="new-chat-btn" onClick={handleNewChat}>
+              <PlusIcon />
+              <span className="text">New chat</span>
+            </button>
           </div>
 
           <div style={{ flex: 1, overflowY: "auto", padding: "4px 8px 8px" }}>
@@ -330,9 +339,12 @@ export default function ChatDashboard() {
           {/* Header */}
           <header style={{ display: "flex", alignItems: "center", gap: "10px", padding: "11px 18px", borderBottom: "1px solid var(--border)", flexShrink: 0, background: "var(--bg)" }}>
             <button className="hdr-btn" onClick={() => setSidebarOpen(v => !v)} title="Toggle sidebar"><MenuIcon /></button>
-            <span style={{ flex: 1, fontSize: "0.8rem", fontWeight: "500", color: "var(--muted2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {hasMessages ? (chats[currentChatId]?.title || "New thread") : "Naved AI"}
+            <span style={{ flex: 1, fontSize: "0.9rem", fontWeight: "500", color: "var(--muted2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: "1px", marginLeft: "4px" }}>
+              {hasMessages ? (chats[currentChatId]?.title || "New thread") : ""}
             </span>
+            <button className="game-mode-btn" onClick={() => navigate("/game")}>
+              Game Mode
+            </button>
           </header>
 
           {/* ── Empty / Welcome State ── */}

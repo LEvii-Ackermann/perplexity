@@ -4,7 +4,7 @@ const initialState = {
     gameId: null,
     product: null,
     originalPrice: null,
-    messages: [],       // { role: "user"|"ai", content: string }
+    messages: [],       
     status: "idle",     // "idle" | "ongoing" | "completed" | "failed"
     scoreCard: null,
     loading: false,

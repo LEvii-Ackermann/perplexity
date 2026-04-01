@@ -25,7 +25,7 @@ export const useGame = () => {
                 originalPrice,
             }))
 
-            // First AI message — shopkeeper opens the negotiation
+            // First AI message
             dispatch(addGameMessage({
                 role: "ai",
                 content: `Haan bolo, ${product} chahiye? Price hai ₹${originalPrice}. Kya offer karoge? 😏`
@@ -43,7 +43,7 @@ export const useGame = () => {
         try {
             dispatch(setGameLoading(true))
 
-            // Optimistically add user message
+            // Add user message
             dispatch(addGameMessage({ role: "user", content: message }))
 
             const data = await sendGameMessage({
@@ -54,7 +54,6 @@ export const useGame = () => {
             // Add AI reply
             dispatch(addGameMessage({ role: "ai", content: data.reply }))
 
-            // Update game status
             dispatch(setGameStatus(data.status))
 
             if (data.status === "completed" && data.scoreCard) {
