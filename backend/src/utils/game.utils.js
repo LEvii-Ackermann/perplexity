@@ -39,12 +39,21 @@ export function extractPrice(text) {
 
 
 
-export function classifyOffer(offer, minPrice) {
-    const diff = minPrice - offer;
-    const percent = diff / minPrice;
+export function classifyOffer(offer, minPrice, originalPrice) {
+    const minRatio = offer / minPrice;
+    const originalRatio = offer / originalPrice;
 
-    if (offer >= minPrice) return "good";
-    if (percent <= 0.1) return "close";     
-    if (percent <= 0.4) return "low";       
-    return "bad";                         
+    if (offer >= minPrice && originalRatio >= 0.7) {
+        return "good"; // strong deal
+    }
+
+    if (offer >= minPrice) {
+        return "close"; // acceptable but not great
+    }
+
+    if (originalRatio >= 0.5) {
+        return "low"; // somewhat reasonable
+    }
+
+    return "bad"; // insultingly low
 }

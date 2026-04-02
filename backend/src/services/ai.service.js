@@ -81,7 +81,7 @@ const fileEditor = tool(fileEditorTool, {
 });
 
 
-//gemini model. Currently not doing anyhting
+//gemini model.
 export const geminiModel = new ChatGoogleGenerativeAI({
   model: "gemini-2.5-flash-lite",
   apiKey: process.env.GEMINI_API_KEY,

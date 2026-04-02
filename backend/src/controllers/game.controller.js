@@ -17,14 +17,16 @@ export const startGame = (req, res, next) => {
         })
     }
 
-    const minPrice = Math.floor(originalPrice * 0.4);
+    const minPrice = Math.floor(originalPrice * (0.4 + Math.random() * 0.2));
 
     games[gameId] = {
         product,
         originalPrice,
         minPrice,
         messages: [],
-        badOffers: 0
+        badOffers: 0,
+        rounds: 0,
+        mood: "neutral"
     }
 
     res.status(200).json({
@@ -61,14 +63,24 @@ export const sendMessage = async (req, res, next) => {
         })
     }
 
+    // Append user message to game history
     game.messages.push({
         role: "user",
         content: message
     })
 
+    // Increment round count
+    game.rounds = (game.rounds || 0) + 1;
+
     const offer = extractPrice(message);
 
-    if (offer !== null && offer >= game.minPrice) {
+
+    // Check if offer is valid and meets conditions to close the deal
+    if (
+        offer !== null &&
+        offer >= game.minPrice &&
+        game.rounds >= 4
+    ) {
         const score = Math.floor(
             ((game.originalPrice - offer) / game.originalPrice) * 100
         );
@@ -84,25 +96,44 @@ export const sendMessage = async (req, res, next) => {
         delete games[gameId];
 
         return res.json({
-            reply: `Deal done at ₹${offer} 🤝`,
+            reply: `Theek hai bhai, deal done at ₹${offer} 🤝`,
             status: "completed",
             scoreCard
         });
     }
 
+
+    // It is to set the mood of the shopkeeper based on the offer.
     if(offer !== null) {
-        const classification = classifyOffer(offer, game.minPrice);
+        const classification = classifyOffer(offer, game.minPrice, game.originalPrice);
         if(classification === "bad") {
             game.badOffers = (game.badOffers || 0) + 1;
+            game.mood = "angry";   
+        } else {
+            game.badOffers = 0;
+        }
 
-            if(game.badOffers >= 3) {
-                delete games[gameId];
+        // Mood system
+        if (classification === "bad") {
+            game.mood = "angry";
+        } 
+        else if (classification === "low") {
+            game.mood = "annoyed";
+        } 
+        else if (classification === "close") {
+            game.mood = "neutral";
+        } 
+        else if (classification === "good") {
+            game.mood = "happy";
+        }  
 
-                return res.json({
-                    reply: "Bhai time waste mat karo 😑 deal cancelled",
-                    status: "failed"
-                });
-            }
+        if(game.badOffers >= 3) {
+            delete games[gameId];
+
+            return res.json({
+                reply: "Bhai time waste mat karo 😑 deal cancelled",
+                status: "failed"
+            });
         }
     }
 
@@ -116,32 +147,54 @@ export const sendMessage = async (req, res, next) => {
         {
             role: "system",
             content: `
-            You are a street shopkeeper in India selling a product.
+                You are a street shopkeeper in India selling a product.
 
-            Product: ${game.product}
-            Original price: ₹${game.originalPrice}
-            Minimum acceptable price: ₹${game.minPrice}
+                Product: ${game.product}
+                Original price: ₹${game.originalPrice}
+                Your hidden minimum price: ₹${game.minPrice}
+                Current negotiation round: ${game.rounds}
+                Current mood: ${game.mood}
 
-            STRICT RULES:
-            - Always negotiate like a human seller
-            - NEVER ask for clarification
-            - NEVER act like an assistant
-            - NEVER explain things
-            - ALWAYS respond with a counter price or reaction
-            - If offer is too low → react (angry/funny/strict)
-            - If offer is close → reduce price slightly
-            - If offer >= minPrice → accept deal
-            - If user wastes time or gives repeated low offers, cancel the deal
+                STRICT RULES:
+                - Always negotiate like a real human seller
+                - NEVER ask questions like an assistant
+                - NEVER explain reasoning
+                - NEVER ask unnecessary questions
+                - ALWAYS reply with a counter price or reaction
+                - When you accept a deal, ALWAYS include the phrase "deal done"
 
-            STYLE:
-            - Short responses
-            - Natural bargaining tone
-            - Example:
-            "Too low bhai, at least ₹4500"
-            "No chance, increase your offer"
-            "Okay final ₹3000, last price"
+                NEGOTIATION BEHAVIOR:
+                - Start from a high price and reduce gradually
+                - Never drop price too quickly
+                - Never accept a deal in the first 2-3 rounds
+                - Try to maximize profit but still close the deal
+                - If user repeats low offers, get frustrated
+                - If user wastes time, cancel the deal
 
-            DO NOT break character.
+                MOOD BEHAVIOR:
+                - If mood is angry → be rude, sarcastic, or strict
+                - If mood is annoyed → slightly irritated tone
+                - If mood is neutral → normal negotiation tone
+                - If mood is happy → friendly and a bit flexible
+
+                LANGUAGE:
+                - Use the same language as the customer
+                - If user speaks English → reply in English
+                - If user speaks Hindi/Hinglish → reply similarly
+
+                STYLE:
+                - Very short responses (1 line preferred)
+                - Use Indian street tone (bhai, yaar, etc.)
+                - Sound natural, not robotic
+
+                EXAMPLES:
+                "Too low bhai, at least ₹4500"
+                "Arey seriously?"
+                "Close hai, ₹3500 kar do"
+                "Final bol raha hu ₹3200"
+                "Time waste mat karo, deal cancel"
+
+                DO NOT break character.
             `
         },
         ...formattedMessages
