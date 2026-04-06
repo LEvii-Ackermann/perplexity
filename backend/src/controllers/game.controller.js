@@ -5,14 +5,10 @@ import { v4 as uuidv4 } from "uuid"
 import { HumanMessage, AIMessage } from "langchain"
 import { extractPrice, classifyOffer } from "../utils/game.utils.js"
 
-
 /**
- * Starts a new game
- * 1. Validate input
- * 2. Create unique game ID
- * 3. Calculate random minimum price (40-60% of original)
- * 4. Initialize game state in memory
- * 5. Return game ID and initial state
+ * startGame: Initializes a new negotiation game with a specified product and original price.
+ * generates a unique game ID and calculates a random minimum price for the product.
+ * Stores the game state in an in-memory object and returns the game details to the client.
  */
 export const startGame = (req, res, next) => {
     const { product, originalPrice } = req.body
@@ -37,7 +33,8 @@ export const startGame = (req, res, next) => {
         mood: "neutral",
         lastOffer: null,
         lastAiPrice: null,
-        maxRounds: 6
+        maxRounds: 6,
+        language: null
     }
 
     res.status(200).json({
@@ -45,11 +42,10 @@ export const startGame = (req, res, next) => {
         gameId,
         game: games[gameId]
     })
-
 }
 
 
-// funtion to get last N messages in HumanMessage/AIMessage format for langchain context
+// function to get recent messages and format them for AI input
 const getRecentMessages = (messages, limit = 6) => {
   return messages.slice(-limit).map((msg) => {
     if (msg.role === "user") return new HumanMessage(msg.content);
@@ -58,17 +54,22 @@ const getRecentMessages = (messages, limit = 6) => {
   }).filter(Boolean);
 };
 
-// function to check if offer is accepted (exact match with last AI price)
+// function to extract offer from user message
 const isDealAccepted = (offer, lastAiPrice) => {
   return offer !== null && lastAiPrice !== null && offer === lastAiPrice;
 };
 
-// function to calculate score based on original price and final price
+// function to extract price from text and determine if it's an offer
 const calculateScore = (originalPrice, finalPrice) => {
   return Math.floor(((originalPrice - finalPrice) / originalPrice) * 100);
 };
 
-// function to update mood based on offer classification and previous offer
+// function to detect language (english or hinglish)
+const isEnglish = (text) => {
+  return /^[a-zA-Z0-9\s.,!?₹]+$/.test(text);
+};
+
+// function to update mood based on offer quality and history
 const updateMood = (game, offer) => {
   const prev = game.lastOffer;
 
@@ -89,32 +90,32 @@ const updateMood = (game, offer) => {
   }
 };
 
-// function to extract offer from AI reply (used to check if AI closed deal or made unrealistic drop)
-const getOffer =(text) => {
+// function to extract offer from AI reply
+const getOffer = (text) => {
   const res = extractPrice(text);
   return res?.isOffer ? res.price : null;
 };
 
-// function to generate AI reply based on recent messages and game state
+// function to generate AI reply based on game state and recent messages
 const generateAIReply = async (game) => {
   const recentMessages = getRecentMessages(game.messages);
 
   const response = await mistralModel.invoke([
     {
       role: "system",
-      systemPrompt: `
+      content: `
 You are a street shopkeeper in India negotiating a product.
 
 Product: ${game.product}
 Original price: ₹${game.originalPrice}
 Current round: ${game.rounds}/${game.maxRounds}
-Your internal target price (hidden): ₹${game.targetPrice}
 User's last offer: ₹${game.lastOffer || "none"}
+Language: ${game.language}
 
 BEHAVIOR RULES:
 
 - Negotiate like a REAL human, not a bot
-- You do NOT reduce price linearly
+- Do NOT reduce price linearly
 - Sometimes reduce a lot, sometimes very little
 - Early rounds → resist strongly
 - Middle rounds → negotiate seriously
@@ -130,15 +131,17 @@ IMPORTANT STRATEGY:
 
 PRICE LOGIC:
 
-- You decide your price naturally
-- But try to stay above your internal target price
 - Do NOT drop more than 20–30% in one step unless near final round
+
+LANGUAGE RULE:
+
+- If language = english → reply in English
+- If language = hinglish → reply in Hinglish
 
 STYLE:
 
 - Short responses (1 line)
-- Hinglish tone (bhai, yaar, etc.)
-- Natural human reactions
+- Natural human tone
 
 EXAMPLES:
 "Arey bhai mazak kar rahe ho kya?"
@@ -155,8 +158,7 @@ ONLY reply as shopkeeper.
   return response.content;
 };
 
-
-// fallback reply if AI fails to generate valid response or extract price
+// Fallback reply if AI fails to generate a response
 const getFallbackReply = (game) => {
   if (game.mood === "angry") {
     return "Bhai system busy hai, par itna low mat bolo 😑";
@@ -168,21 +170,27 @@ const getFallbackReply = (game) => {
 };
 
 
+
 /**
- * Complete game flow:
+ * Full game flow:
  * 1. User sends message with offer
- * 2. Extract offer and classify
- * 3. Check if deal accepted
- * 4. Update mood and bad offer count
- * 5. If too many bad offers → cancel game
- * 6. Generate AI reply based on recent messages and mood
- * 7. Extract AI offer and check if AI closed deal
- * 8. Return AI reply and updated game state
- * 9. If deal completed → calculate score and save scorecard
+ * 2. Validate offer and update game state
+ * 3. Check for deal acceptance 
+ * 4. Update mood based on offer quality
+ * 5. If game continues, generate AI reply based on recent messages and game state
+ * 6. Extract offer from AI reply and update game state
+ * 7. Check for deal acceptance again
+ * 8. Return AI reply and updated game state to user
+ * 
+ * Edge cases:
+ * - If user doesn't send an offer → prompt them to send an offer
+ * - If user sends a very low offer → react emotionally
+ * - If AI fails to generate a response → send fallback reply based on mood
+ * - If user tries to drop price too much in one step → reject and warn
  */
 export const sendMessage = async (req, res) => {
   try {
-    const { gameId, message } = req.body;
+    const { gameId, message, offer } = req.body;
 
     if (!gameId || !message) {
       return res.status(400).json({ error: "gameId and message required" });
@@ -194,19 +202,28 @@ export const sendMessage = async (req, res) => {
       return res.status(404).json({ message: "Game not found" });
     }
 
+    // language detection
+    if (!game.language) {
+      game.language = isEnglish(message) ? "english" : "hinglish";
+    }
+
     // 1. Add user message
     game.messages.push({ role: "user", content: message });
     game.rounds++;
 
-    // 2. Extract user offer and classify
-    const extraction = await extractPrice(message);
-    const offer = extraction?.isOffer ? extraction.price : null;
-
-    if (offer !== null) {
-      game.lastOffer = offer;
+    //  OFFER COMPULSORY
+    if (offer === null || isNaN(offer)) {
+      return res.json({
+        reply: game.language === "english"
+          ? "Please give a price offer to continue."
+          : "Bhai price toh bol 😄",
+        status: "ongoing"
+      });
     }
 
-    // 3. Check deal acceptance
+    game.lastOffer = offer;
+
+    // 3. Deal accepted
     if (isDealAccepted(offer, game.lastAiPrice)) {
       const score = calculateScore(game.originalPrice, offer);
 
@@ -227,10 +244,10 @@ export const sendMessage = async (req, res) => {
       });
     }
 
-    // 4. Update mood
+    // 4. Mood
     updateMood(game, offer);
 
-    // 5. Cancel if too many bad offers
+    // 5. Cancel
     if (game.badOffers >= 3) {
       delete games[gameId];
       return res.json({
@@ -239,46 +256,69 @@ export const sendMessage = async (req, res) => {
       });
     }
 
-    // 6. Generate AI reply
+    //  END AFTER MAX ROUNDS
+    if (game.rounds >= game.maxRounds) {
+      const finalPrice = game.lastOffer;
+
+      const score = calculateScore(game.originalPrice, finalPrice);
+
+      const scoreCard = await scoreModel.create({
+        user: req.user.id,
+        product: game.product,
+        originalPrice: game.originalPrice,
+        finalPrice,
+        score
+      });
+
+      delete games[gameId];
+
+      return res.json({
+        reply: game.language === "english"
+          ? `Last round! Your final offer ₹${finalPrice} is recorded.`
+          : `Last round tha bhai, ₹${finalPrice} lock kar diya 😄`,
+        status: "completed",
+        scoreCard
+      });
+    }
+
+    // 6. AI reply
     let aiReply;
 
     try {
         aiReply = await generateAIReply(game);
     } catch (error) {
-        console.error("AI Error:", error.message);
-
-        // Fallback reply (VERY IMPORTANT)
         aiReply = getFallbackReply(game);
     }
 
-    // 7. Checking unrealistic drops (to prevent AI from dropping price too fast)
-    const aiPriceCheck = await getOffer(aiReply);
-    if (aiPriceCheck && game.lastAiPrice) {
+    // 7. unrealistic drop check
+    const aiPriceCheck = getOffer(aiReply);
+
+    if (aiPriceCheck !== null && game.lastAiPrice !== null) {
         const maxDrop = game.lastAiPrice * 0.3;
 
         if (game.lastAiPrice - aiPriceCheck > maxDrop) {
-            // reject unrealistic drop
             return res.json({
-            reply: "Arey itna bhi nahi girta bhai, thoda realistic bolo",
-            status: "ongoing"
+                reply: "Arey itna bhi nahi girta bhai 😅",
+                status: "ongoing"
             });
         }
     }
 
-    // 8. Save AI message
+    // 8. save AI
     game.messages.push({ role: "ai", content: aiReply });
 
-    // 9. Extract AI price
-    const aiExtracted = extractPrice(aiReply);
+    // 9. extract AI price
+    const aiExtracted = await extractPrice(aiReply);
     const aiPrice = aiExtracted?.isOffer ? aiExtracted.price : null;
 
     if (aiPrice !== null) {
       game.lastAiPrice = aiPrice;
     }
 
-    // 10. Check if AI closed deal
+    // 10. AI deal done
     if (aiReply.toLowerCase().includes("deal done")) {
-      const finalPrice = aiPrice || game.lastOffer;
+      const finalPrice = game.lastOffer;
+
       const score = calculateScore(game.originalPrice, finalPrice);
 
       const scoreCard = await scoreModel.create({
@@ -298,7 +338,6 @@ export const sendMessage = async (req, res) => {
       });
     }
 
-    // 11. Return ongoing state
     return res.json({
       reply: aiReply,
       status: "ongoing",
@@ -310,4 +349,3 @@ export const sendMessage = async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 };
-
