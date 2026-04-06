@@ -152,6 +152,15 @@ export const sendMessage = async (req, res, next) => {
         ...formattedMessages
     ])
 
+    // Parse the AI response as JSON
+    let parsedResponse;
+    try {
+        parsedResponse = JSON.parse(response.content);
+    } catch (error) {
+        // Fallback if JSON parsing fails
+        parsedResponse = { extractedPrice: null, response: response.content };
+    }
+
     const { extractedPrice, response: aiReply } = parsedResponse;
     const offer = extractedPrice;
 
