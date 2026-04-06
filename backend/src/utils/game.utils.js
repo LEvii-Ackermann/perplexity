@@ -1,87 +1,80 @@
-import { geminiModel } from "../services/ai.service.js";
-
-// export function extractPrice(text) {
-//   if (!text) return null;
-
-//   text = text.toLowerCase().replace(/,/g, "");
-
-//   // 🔹 Match all numbers (global)
-//   const matches = text.match(/\d+(\.\d+)?/g);
-//   if (!matches) return null;
-
-//   let numbers = matches.map(Number);
-
-//   // 🔹 Handle "k" properly (only when attached to number)
-//   const kMatch = text.match(/(\d+(\.\d+)?)\s*k\b/);
-//   if (kMatch) {
-//     return Math.floor(Number(kMatch[1]) * 1000);
-//   }
-
-//   // 🔹 Heuristic: pick most likely offer
-//   if (
-//     text.includes("only") ||
-//     text.includes("just") ||
-//     text.includes("have") ||
-//     text.includes("budget")
-//   ) {
-//     return Math.min(...numbers); // user is saying max they have
-//   }
-
-//   if (
-//     text.includes("max") ||
-//     text.includes("final") ||
-//     text.includes("last")
-//   ) {
-//     return Math.max(...numbers); // strong offer
-//   }
-
-//   // 🔹 Default: take last number (usually the offer in sentence)
-//   return Math.floor(numbers[numbers.length - 1]);
-// }
-
-export async function extractPrice(text) {
+export function extractPrice(text) {
   if (!text) return { isOffer: false, price: null };
 
-  const response = await geminiModel.invoke([
-    {
-      role: "system",
-      content: `
-        You are an AI that extracts price offers from user messages in a bargaining game.
+  // 🔹 Normalize text (lowercase + remove commas)
+  const cleaned = text.toLowerCase().replace(/,/g, "").trim();
 
-        Your job:
-        1. Detect if the user is actually making a price offer
-        2. If yes → extract the most relevant price
-        3. If not → return null
+  // 🔹 Split words (used later for intent rules)
+  const words = cleaned.split(/\s+/);
 
-        Rules:
-        - If user is reacting, questioning, or repeating price → NOT an offer
-        - Only extract price if user clearly intends to pay that amount
-        - Words like "max", "final", "last", "I can give", "I have" indicate offers
-        - If "k" is used (e.g., 5k), convert to 5000
-        - If multiple numbers → pick the final/strongest offer
+  // =========================
+  // 🧠 STEP 1: Extract number
+  // =========================
 
-        Return ONLY valid JSON:
-        {
-          "isOffer": true/false,
-          "price": number or null
-        }`
-    },
-    {
-      role: "user",
-      content: text
+  let price = null;
+
+  // Handle "12k" → 12000
+  const kMatch = cleaned.match(/(\d+)\s*k/);
+  if (kMatch) {
+    price = parseInt(kMatch[1], 10) * 1000;
+  } else {
+    // Normal numbers like 10000, 50000
+    const match = cleaned.match(/\b\d{3,6}\b/);
+    if (match) {
+      price = parseInt(match[0], 10);
     }
-  ]);
+  }
 
-  let parsed;
+  // If no number found → not an offer
+  if (!price) {
+    return { isOffer: false, price: null };
+  }
 
-    try {
-        parsed = JSON.parse(response.content);
-    } catch {
-        return { isOffer: false, price: null };
-    }
+  // =========================
+  // 🧠 STEP 2: Reject obvious NON-offers
+  // =========================
 
-    return parsed;
+  // Question or disbelief → not an offer
+  const rejectPatterns = [
+    /\?/,
+    /\b(seriously|really|sach|kya|why|kaise)\b/,
+    /\b(too much|mehenga|expensive)\b/
+  ];
+
+  if (rejectPatterns.some((pattern) => pattern.test(cleaned))) {
+    return { isOffer: false, price: null };
+  }
+
+  // =========================
+  // 🧠 STEP 3: Strong offer intent
+  // =========================
+
+  const strongOfferPatterns = [
+    /\b(final|last|done|deal)\b/,
+    /\b(i can give|i will give|i'll give)\b/,
+    /\b(de deta hu|de dunga|le lo|mera budget|max)\b/
+  ];
+
+  if (strongOfferPatterns.some((pattern) => pattern.test(cleaned))) {
+    return { isOffer: true, price };
+  }
+
+  // =========================
+  // 🧠 STEP 4: Weak intent (short + direct)
+  // =========================
+
+  // Example: "50000", "bhai 20000", "20000 bhai"
+  if (words.length <= 3) {
+    return { isOffer: true, price };
+  }
+
+  // =========================
+  // 🧠 STEP 5: Default fallback
+  // =========================
+
+  return { isOffer: false, price: null };
 }
+
 
 export function classifyOffer(offer, minPrice, originalPrice) {
   const minRatio = offer / minPrice;

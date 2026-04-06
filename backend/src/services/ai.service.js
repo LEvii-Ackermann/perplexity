@@ -88,7 +88,7 @@ export const geminiModel = new ChatGoogleGenerativeAI({
 });
 
 //mistral model
-const mistralModel = new ChatMistralAI({
+export const mistralModel = new ChatMistralAI({
   model: "mistral-small-latest",
   apiKey: process.env.MISTRAL_API_KEY,
   temperature: 0,
