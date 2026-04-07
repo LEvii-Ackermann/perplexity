@@ -32,7 +32,7 @@ const scoreSchema = new mongoose.Schema(
         type: Number
     },
 
-    aiMoode: {
+    aiMood: {
         type: String
     }
   },

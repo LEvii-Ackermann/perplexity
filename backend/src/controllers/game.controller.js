@@ -188,7 +188,7 @@ const getFallbackReply = (game) => {
  * - If AI fails to generate a response → send fallback reply based on mood
  * - If user tries to drop price too much in one step → reject and warn
  */
-export const sendMessage = async (req, res) => {
+export const sendMessage = async (req, res, next) => {
   try {
     const { gameId, message, offer } = req.body;
 
@@ -232,6 +232,7 @@ export const sendMessage = async (req, res) => {
         product: game.product,
         originalPrice: game.originalPrice,
         finalPrice: offer,
+        attempts: game.rounds,
         score
       });
 
@@ -266,7 +267,8 @@ export const sendMessage = async (req, res) => {
         user: req.user.id,
         product: game.product,
         originalPrice: game.originalPrice,
-        finalPrice,
+        finalPrice: offer,
+        attempts: game.rounds,
         score
       });
 
@@ -325,7 +327,8 @@ export const sendMessage = async (req, res) => {
         user: req.user.id,
         product: game.product,
         originalPrice: game.originalPrice,
-        finalPrice,
+        finalPrice: offer,
+        attempts: game.rounds,
         score
       });
 
@@ -349,3 +352,88 @@ export const sendMessage = async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 };
+
+
+// Leaderboard controller to fetch top scores
+export const leaderboardController = async (req, res, next) => {
+  try {
+    const topscores = await scoreModel.find().sort({ score: -1}).limit(10).populate("user")
+    console.log("Leaderboard", topscores[0]);
+    res.status(200).json({
+      leaderboard: topscores.map(score => ({
+        user: score.user.username,
+        product: score.product, 
+        attemps: score.attempts,
+        score: score.score,
+      }))
+    })
+  } 
+  catch (error) {
+    console.error("leaderboardController error:", error);
+    return res.status(500).json({
+      error: "Internal server error"
+    })
+  }
+}
+
+
+// Controller to fetch score and details of the deal
+export const scoreController = async (req, res, next) => {
+  try {
+    const latestScore = await scoreModel.findOne({ user: req.user.id}).sort({ createdAt: -1 }).populate("user")
+    if (!latestScore) {
+      return res.status(404).json({
+        message: "No scores found for user"
+      })
+    }
+
+    res.status(200).json({
+      score: latestScore.score,
+      product: latestScore.product,
+      originalPrice: latestScore.originalPrice,
+      finalPrice: latestScore.finalPrice,
+      attempts: latestScore.attempts,
+      user: latestScore.user.username
+    })
+  }
+  catch (error) {
+    console.error("scoreController error:", error);
+    return res.status(500).json({
+      error: "Internal server error"
+    })
+  }
+}
+
+
+// Controller to get user's current rank based on latest score
+export const getUserRankController = async (req, res, next) => {
+  try {
+    const scores = await scoreModel.find().sort({ score: -1 }).populate("user")
+
+    const latestScore = await scoreModel.findOne({ user: req.user.id}).sort({ createdAt: -1 })
+    if (!latestScore) {
+      return res.status(200).json({
+        message: "No games played yet",
+        rank: null
+      });
+    }
+
+    const userIndex = scores.findIndex((score) => {
+      return score._id.toString() === latestScore._id.toString();
+    });
+
+    const userRank = userIndex !== -1 ? userIndex + 1 : null;
+
+    res.status(200).json({
+      rank: userRank,
+      score: latestScore.score,
+      totalPlayers: scores.length
+    })
+  }
+  catch (error) {
+    console.error("getUserRankController error:", error);
+    return res.status(500).json({
+      error: "Internal server error"
+    })
+  }
+}
