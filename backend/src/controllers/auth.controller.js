@@ -4,6 +4,7 @@ import bcrypt from "bcrypt"
 import { sendEmail } from "../services/mail.service.js"
 import dotenv from "dotenv"
 import redis from "../config/cache.js"
+import { success } from "zod"
 
 dotenv.config() 
 
@@ -34,7 +35,8 @@ export async function registerController (req, res, next) {
     const user = await userModel.create({ 
         email: email,
         username: username,
-        password: hash
+        password: hash,
+        provider: "local"
     })
 
     const emailVerificationToken = jwt.sign({
@@ -113,8 +115,11 @@ export async function loginController(req, res, next){
         })
     }
 
-    console.log("Password from body:", password)
-    console.log("Password from DB:", user.password)
+    if(user.provider === "google"){
+        return res.status(400).json({
+            message: "Please login with Google"
+        })
+    }
 
     const isPasswordValid = await bcrypt.compare(password, user.password)
     if(!isPasswordValid){
@@ -188,3 +193,76 @@ export async function logoutController(req, res, next){
         message: "logout user successfully"
     })
 }
+
+/**
+ * @route GET /api/auth/google/callback
+ * @desc Handle Google OAuth callback and authenticate user
+ */
+export async function googleAuthController(req, res, next) {
+    try {
+        const { displayName, emails, id, photos } = req.user
+
+        const email = emails?.[0]?.value
+        const avatar = photos?.[0]?.value
+        const googleId = id
+
+        if(!email){
+            return res.status(400).json({
+                message: "Google email not found"
+            })
+        }
+
+        // 1. Check if user exists
+        let user = await userModel.findOne({ email })
+
+        // 2. If NOT exists → create user
+        if (!user) {
+            const baseUsername = displayName.replace(/\s+/g, "").toLowerCase()
+            let username = baseUsername
+            let count = 1
+
+            while (await userModel.findOne({ username })) {
+                username = `${baseUsername}${count++}`
+            }
+
+            user = await userModel.create({
+                name: displayName,
+                email,
+                username,
+                googleId,
+                avatar,
+                provider: "google",
+                verified: true
+            })
+        }
+
+        // 3. Generate JWT
+        const token = jwt.sign({
+            id: user._id,
+            email: user.email,
+            username: user.username
+        }, process.env.JWT_SECRET, {
+            expiresIn: "7d"
+        })
+
+        // 4. Send cookie (IMPORTANT)
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: false,
+            sameSite: "lax"
+        })
+
+
+        // 5. Redirect to frontend
+        return res.redirect("http://localhost:5173/")
+
+    } catch (err) {
+        console.error("Google Auth Error:", err)
+        res.status(500).json({
+            message: "Google authentication failed",
+            success: false,
+            err: err.message
+        })
+    }
+}
+

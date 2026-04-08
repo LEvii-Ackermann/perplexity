@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router";
 import { useAuth } from "../hooks/useAuth.js";
 import { useNavigate } from "react-router";
+import { googleAuth } from "../services/auth.api.js";
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -21,6 +22,10 @@ const Register = () => {
       [name]: value,
     }));
   };
+
+  const oathGoogleRegister =  () => {
+    googleAuth()
+  }
 
   // Submit handler
   const handleSubmit = async (e) => {
@@ -98,11 +103,15 @@ const Register = () => {
             {/* Button */}
             <button
               type="submit"
-              className="w-full py-2 rounded-lg font-medium text-black bg-linear-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 transition"
+              className="w-full py-2 rounded-lg font-medium text-black bg-linear-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 cursor-pointer transition"
             >
               Register
             </button>
           </form>
+
+          <button onClick={oathGoogleRegister} className="w-full py-2 rounded-lg font-medium text-black bg-linear-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 cursor-pointer transition mt-4">
+            Sign up with Google
+          </button>
 
           {/* Footer */}
           <p className="text-center text-sm text-gray-500 mt-6">

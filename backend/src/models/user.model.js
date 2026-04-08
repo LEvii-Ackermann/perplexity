@@ -12,16 +12,22 @@ const userSchema = new mongoose.Schema(
             required: [true, "username is required"],
             unique: [true, "username should be unique"]
         },
+        provider: {
+            type: String,
+            enum: ["local", "google"],
+            default: "local"
+        },
         password: {
             type: String,
-            required: [true, "password is required"],
-            unique: [true, "password should be unique"],
+            required: function() {
+                return this.provider === "local"
+            },
             select: false
         },
         verified: {
             type: Boolean,
             default: false
-        }
+        },
     },
     {
         timestamps: true

@@ -4,6 +4,7 @@ import { useAuth } from "../hooks/useAuth.js";
 import { useNavigate } from "react-router";
 import { useSelector } from "react-redux";
 import { Navigate } from "react-router";
+import { googleAuth } from "../services/auth.api.js";
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -24,6 +25,10 @@ const Login = () => {
       [name]: value,
     }));
   };
+
+  const oAthGoogleLogin = async () => {
+    googleAuth()
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -89,11 +94,15 @@ const Login = () => {
             {/* Button */}
             <button
               type="submit"
-              className="w-full py-2 rounded-lg font-medium text-black bg-linear-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 transition"
+              className="w-full py-2 rounded-lg font-medium text-black bg-linear-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 cursor-pointer transition"
             >
               Login
             </button>
           </form>
+
+          <button onClick={oAthGoogleLogin} className="w-full py-2 rounded-lg font-medium text-black bg-linear-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 cursor-pointer transition mt-4">
+            Sign in with Google
+          </button>
 
           {/* Footer */}
           <p className="text-center text-sm text-gray-500 mt-6">

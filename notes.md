@@ -178,3 +178,67 @@ User → Agent → run_code → Judge0 → Output
 
 ➡️ This tool allows safe file operations inside a restricted sandbox folder using async Node.js APIs.
 -------------------------------------------------------------------------------------------------------------------------
+
+
+🔐 Authentication System (JWT + Google OAuth)
+🧠 Overview
+
+This project uses a unified authentication system where:
+
+Users can login via email/password or Google OAuth
+After login, a JWT token is generated
+All protected routes are secured using middleware
+Redis is used for token blacklisting (logout system)
+🔑 Authentication Flow
+1. Register/Login (Normal Auth)
+User sends email + password
+Server validates user
+JWT token is generated
+Token is sent via cookies
+User → Login/Register → Generate JWT → Send Token
+2. Google OAuth Flow
+User clicks "Login with Google"
+Redirected to Google
+Google returns user profile
+Backend:
+Extracts user data
+Creates user (if not exists)
+Generates JWT
+Sends token
+User → Google → Callback → Create/Login User → Generate JWT
+🧾 Google Profile Data
+
+From req.user:
+
+{
+  id,
+  displayName,
+  emails: [{ value }],
+  photos: [{ value }]
+}
+Extracted Fields:
+const email = emails[0].value
+const avatar = photos[0].value
+👤 Username Generation Logic
+Base username from displayName
+Remove spaces + lowercase
+Ensure uniqueness
+const baseUsername = displayName.replace(/\s+/g, "").toLowerCase()
+let username = baseUsername
+let count = 1
+
+while(await userModel.findOne({ username })){
+    username = `${baseUsername}${count}`
+    count++
+}
+🔐 JWT Token
+Payload:
+{
+  id,
+  email,
+  username
+}
+Expiry:
+expiresIn: "7d"
+Sent via:
+res.cookie("token", token)

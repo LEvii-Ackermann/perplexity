@@ -1,7 +1,9 @@
 import express from "express"
-import { getMeController, loginController, registerController, verifyEmailController, logoutController } from "../controllers/auth.controller.js"
+import { getMeController, loginController, registerController, verifyEmailController, logoutController, googleAuthController } from "../controllers/auth.controller.js"
 import { loginValidator, registerValidator } from "../validators/auth.validator.js"
 import { identifyUser } from "../middlewares/auth.middleware.js"
+import passport from "passport"
+import { Strategy as GoogleStrategy} from "passport-google-oauth20"
 
 const authRouter = express.Router()
 
@@ -34,7 +36,22 @@ authRouter.post("/login",loginValidator ,loginController)
  */
 authRouter.get("/get-me", identifyUser, getMeController)
 
-
+// Logout route
 authRouter.get("/logout", identifyUser, logoutController)
+
+
+/**
+ * @route GET /api/auth/google
+ * @desc Authenticate user with Google OAuth
+ * @access Public
+ */
+authRouter.get('/google',
+  passport.authenticate('google', { scope: ['profile', 'email'] })
+);
+
+authRouter.get('/google/callback',
+  passport.authenticate('google', { session: false, failureRedirect: 'http://localhost:5173/login' }),
+  googleAuthController
+);
 
 export default authRouter

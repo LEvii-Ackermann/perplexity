@@ -20,6 +20,10 @@ export async function login ({email, password}) {
     return response.data
 }
 
+export function googleAuth() {
+    window.location.href = "http://localhost:3000/api/auth/google"
+}
+
 export async function getMe (){
     const response = await api.get("/api/auth/get-me")
     return response.data
