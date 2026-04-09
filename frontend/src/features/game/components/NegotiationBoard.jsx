@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useGame } from "../hooks/useGame.js";
+import keyboardImg from "../../../assets/Keyboard-Background-PNG-Image.webp";
 
 const SendIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -8,12 +9,12 @@ const SendIcon = () => (
 );
 
 const MicIcon = () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
-      <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-      <line x1="12" x2="12" y1="19" y2="22" />
-    </svg>
-)
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+    <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+    <line x1="12" x2="12" y1="19" y2="22" />
+  </svg>
+);
 
 export default function NegotiationBoard() {
   const {
@@ -26,41 +27,27 @@ export default function NegotiationBoard() {
   } = useGame();
 
   const [input, setInput] = useState("");
+  const [offer, setOffer] = useState("");
   const inputRef = useRef(null);
-  const bottomRef = useRef(null);
 
-  // Focus input automatically
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
-  // Scroll logic for new messages - though in this UI they look floating, 
-  // we'll just show the latest message in the bubble for each side, 
-  // or show a scrollable list. The screenshot shows floating bubbles.
-  // For a clean implementation, let's derive the last user message and last AI message,
-  // Or show a chronological floating history.
-  // We'll show the last user message on the left (or right) and AI on the right (or left).
-  // The layout has Tom (User/Buyer?) on left and Jerry (AI/Seller?) on right.
-  // We'll extract the latest message for each role.
+  const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
+  const lastAiMsg = [...messages].reverse().find((m) => m.role === "ai");
 
-  const lastUserMsg = [...messages].reverse().find(m => m.role === "user");
-  const lastAiMsg = [...messages].reverse().find(m => m.role === "ai");
+const handleSend = async () => {
+  if (!input.trim() || !offer) return;
 
-  const handleSend = async () => {
-    const msg = input.trim();
-    if (!msg || loading) return;
+  await handleSendMessage({
+    message: input,
+    offer: Number(offer), 
+  });
 
-    // Optional: detect price in frontend as an 'offer' field or let backend parse it.
-    // The backend uses req.body.offer. If it's null, we should try to extract it here to pass.
-    let offer = null;
-    const matches = msg.match(/\d+/g);
-    if (matches) {
-       offer = parseInt(matches[matches.length - 1], 10);
-    }
-
-    setInput("");
-    await handleSendMessage(msg, offer);
-  };
+  setInput("");
+  setOffer("");
+};
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -70,95 +57,352 @@ export default function NegotiationBoard() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-[#2d2d33] font-sora relative overflow-hidden">
-      
-      {/* Central Product Image Area */}
-      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
-         <div className="w-[450px] aspect-video bg-black/40 rounded-xl border border-white/10 flex items-center justify-center flex-col p-4 shadow-2xl relative">
-            <span className="text-8xl mb-4">⌨️</span>
-            <span className="text-lg text-white/50 lowercase tracking-widest font-mono">Safe work</span>
-         </div>
-         {/* Item Title Badge */}
-         <div className="absolute -bottom-4 right-8 bg-[#2d2110] border border-orange-500/30 px-4 py-1 text-orange-400 font-bold uppercase text-sm shadow-md rounded-sm mt-4 transform rotate-[-2deg]">
-            ITEM: {product?.toUpperCase() || "LIMITED ED. MECH KEYBOARD"}
-         </div>
+    <div
+      className="flex flex-col h-screen relative overflow-hidden"
+      style={{ background: "#13121f", fontFamily: "'Sora', sans-serif" }}
+    >
+      {/* ── Central Product Area ── */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+        <div
+          className="flex items-center justify-center flex-col p-4 relative"
+          style={{
+            width: "400px",
+            aspectRatio: "16/9",
+            borderRadius: "12px",
+            
+          }}
+        >
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px] flex items-center justify-center">
+
+            {/* Background keyboard */}
+            <img
+              src={keyboardImg}
+              alt="Product"
+              className="absolute w-full h-full object-contain opacity-80 drop-shadow-[0_0_40px_rgba(0,150,255,0.5)]"
+            />
+
+          </div>
+        </div>
       </div>
 
-      {/* Characters and Bubbles Container */}
-      <div className="flex-1 flex justify-between items-center px-12 z-10 w-full pt-10">
-        
-        {/* Left Character (Buyer/User) */}
-        <div className="flex flex-col items-center relative w-1/3">
-           {lastUserMsg && (
-             <div className="absolute bottom-[280px] right-[-100px] bg-white text-black p-4 rounded-xl rounded-bl-sm shadow-xl max-w-xs text-sm font-medium animate-[fadeUp_0.3s_ease_both] border-2 border-red-500/20 z-20">
-               <div className="absolute -top-3 right-4 bg-orange-400 text-white text-[0.6rem] font-bold px-2 py-0.5 rounded-sm transform rotate-[-5deg]">STUBBORN</div>
-               "{lastUserMsg.content}"
-               <div className="absolute -bottom-3 left-0 w-0 h-0 border-l-[15px] border-l-white border-b-[15px] border-b-transparent"></div>
-             </div>
-           )}
-           <div className="w-56 h-72 border-4 border-yellow-500 bg-yellow-400/20 flex items-center justify-center -rotate-3 rounded-sm shadow-2xl overflow-hidden relative p-4">
-              <span className="text-9xl">{selectedBuyer?.emoji || "🐭"}</span>
-           </div>
+      {/* ── Characters Row ── */}
+      <div className="flex-1 flex justify-between items-center px-16 z-10 w-full pt-8">
+
+        {/* ── LEFT — Buyer ── */}
+        <div className="flex flex-col items-center relative" style={{ width: "220px" }}>
+
+          {/* Speech bubble */}
+          {lastUserMsg && (
+            <div
+              className="absolute z-20 text-sm font-medium"
+              style={{
+                bottom: "290px",
+                right: "-110px",
+                background: "#fff",
+                color: "#111",
+                padding: "12px 14px",
+                borderRadius: "12px 12px 2px 12px",
+                maxWidth: "220px",
+                boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
+                border: "2px solid rgba(234,160,32,0.25)",
+                animation: "fadeUp 0.3s ease both",
+              }}
+            >
+              <div
+                className="absolute font-bold uppercase"
+                style={{
+                  top: "-10px",
+                  right: "10px",
+                  background: "#e8a020",
+                  color: "#1a0e00",
+                  fontSize: "9px",
+                  padding: "2px 7px",
+                  borderRadius: "2px",
+                  transform: "rotate(-4deg)",
+                  letterSpacing: "1px",
+                }}
+              >
+                STUBBORN
+              </div>
+              <div>
+                <div>"{lastUserMsg?.content?.message}"</div>
+                <div style={{ fontSize: "12px", opacity: 0.7 }}>
+                  Offer: ₹{lastUserMsg?.content?.offer}
+                </div>
+              </div>
+              {/* tail */}
+              <div style={{
+                position: "absolute", bottom: "-12px", left: "0",
+                width: 0, height: 0,
+                borderLeft: "14px solid #fff",
+                borderBottom: "12px solid transparent",
+              }} />
+            </div>
+          )}
+
+          {/* Buyer Character Card */}
+          <CharacterCard
+            char={selectedBuyer}
+            borderColor="#d4920c"
+            shadowColor="rgba(212,146,12,0.35)"
+            rotate="-3deg"
+            label={selectedBuyer?.name || "BUYER"}
+            labelBg="#c08000"
+          />
         </div>
 
-        {/* Right Character (Seller/AI) */}
-        <div className="flex flex-col items-center relative w-1/3">
-           {lastAiMsg && (
-             <div className="absolute bottom-[280px] left-[-100px] bg-white text-black p-4 rounded-xl rounded-br-sm shadow-xl max-w-xs text-sm font-medium animate-[fadeUp_0.3s_ease_both] border-2 border-blue-500/20 z-20">
-               "{lastAiMsg.content}"
-               <div className="absolute -bottom-3 right-0 w-0 h-0 border-r-[15px] border-r-white border-b-[15px] border-b-transparent"></div>
-             </div>
-           )}
+        {/* ── RIGHT — Seller ── */}
+        <div className="flex flex-col items-center relative" style={{ width: "220px" }}>
 
-            {/* AI Loading indicator */}
-            {loading && !lastAiMsg && (
-             <div className="absolute bottom-[280px] left-[-80px] bg-white/10 backdrop-blur-sm border border-white/20 p-3 rounded-full flex gap-1 z-20 animate-pulse">
-                <div className="w-2 h-2 bg-white/50 rounded-full"></div>
-                <div className="w-2 h-2 bg-white/50 rounded-full"></div>
-                <div className="w-2 h-2 bg-white/50 rounded-full"></div>
-             </div>
-            )}
+          {/* Speech bubble */}
+          {lastAiMsg && (
+            <div
+              className="absolute z-20 text-sm font-medium"
+              style={{
+                bottom: "290px",
+                left: "-110px",
+                background: "#fff",
+                color: "#111",
+                padding: "12px 14px",
+                borderRadius: "12px 12px 12px 2px",
+                maxWidth: "220px",
+                boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
+                border: "2px solid rgba(192,48,48,0.2)",
+                animation: "fadeUp 0.3s ease both",
+              }}
+            >
+              <div>
+                <div>
+                  "
+                  {typeof lastAiMsg?.content === "string"
+                    ? lastAiMsg.content
+                    : lastAiMsg?.content?.message}
+                  "
+                </div>
 
-           <div className="w-56 h-72 border-4 border-[#0eb7b1] bg-[#0eb7b1]/20 flex items-center justify-center rotate-3 rounded-sm shadow-2xl overflow-hidden relative p-4">
-              <span className="text-9xl">{selectedSeller?.emoji || "😼"}</span>
-           </div>
+                {typeof lastAiMsg?.content === "object" && (
+                  <div style={{ fontSize: "12px", opacity: 0.7 }}>
+                    Offer: ₹{lastAiMsg?.content?.offer}
+                  </div>
+                )}
+              </div>
+              <div style={{
+                position: "absolute", bottom: "-12px", right: "0",
+                width: 0, height: 0,
+                borderRight: "14px solid #fff",
+                borderBottom: "12px solid transparent",
+              }} />
+            </div>
+          )}
+
+          {/* Loading dots */}
+          {loading && !lastAiMsg && (
+            <div
+              className="absolute z-20 flex gap-1 animate-pulse"
+              style={{
+                bottom: "290px",
+                left: "-70px",
+                background: "rgba(255,255,255,0.08)",
+                backdropFilter: "blur(6px)",
+                border: "1px solid rgba(255,255,255,0.15)",
+                padding: "10px 14px",
+                borderRadius: "999px",
+              }}
+            >
+              {[0, 1, 2].map((i) => (
+                <div key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: "rgba(255,255,255,0.5)" }} />
+              ))}
+            </div>
+          )}
+
+          {/* Seller Character Card */}
+          <CharacterCard
+            char={selectedSeller}
+            borderColor="#c03030"
+            shadowColor="rgba(192,48,48,0.35)"
+            rotate="3deg"
+            label={selectedSeller?.name || "SELLER"}
+            labelBg="#8a1c1c"
+          />
         </div>
 
       </div>
 
-      {/* Bottom Input Area */}
-      <div className="h-32 bg-transparent flex justify-center items-end pb-8 z-10 w-full absolute bottom-0">
-         <div className="w-full max-w-2xl px-4 relative">
-             <div className="absolute -top-3 left-8 bg-yellow-400 text-yellow-950 font-bold px-3 py-0.5 text-xs uppercase z-20">
-                 OFFER INPUT
-             </div>
-             <div className="flex items-center gap-2 bg-[#2d2d31] border-2 border-indigo-400 p-2 shadow-2xl rounded-sm">
-                 <button className="bg-red-500 text-white p-3 flex-shrink-0 hover:bg-red-600 transition-colors">
-                     <MicIcon />
-                 </button>
-                 <input 
-                    ref={inputRef}
-                    type="text" 
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Enter your offer..."
-                    className="flex-1 bg-transparent border-none outline-none text-white px-2 py-2 font-medium"
-                    disabled={loading}
-                 />
-                 <button 
-                    onClick={handleSend}
-                    disabled={!input.trim() || loading}
-                    className={`bg-yellow-400 text-yellow-950 px-6 py-2.5 font-bold flex items-center gap-2 uppercase tracking-wide
-                       ${!input.trim() || loading ? "opacity-50 cursor-not-allowed" : "hover:bg-yellow-300 transition-colors"}
-                    `}
-                 >
-                     SEND <span className="text-lg leading-none">➔</span>
-                 </button>
-             </div>
-         </div>
+      {/* ── Bottom Input ── */}
+      <div className="absolute bottom-0 w-full flex justify-center pb-8 z-10">
+        <div className="relative w-full px-4" style={{ maxWidth: "640px" }}>
+
+          {/* OFFER LABEL */}
+          <div
+            className="absolute font-bold uppercase z-20"
+            style={{
+              top: "-11px",
+              left: "28px",
+              background: "#d4920c",
+              color: "#1a0e00",
+              fontSize: "10px",
+              padding: "2px 10px",
+              letterSpacing: "1.5px",
+              borderRadius: "2px",
+            }}
+          >
+            OFFER INPUT
+          </div>
+
+          {/* MAIN BOX */}
+          <div
+            className="flex items-center gap-2 p-2"
+            style={{
+              background: "#1a192e",
+              border: "2px solid #4a4aaa",
+              borderRadius: "4px",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+            }}
+          >
+            {/* MIC BUTTON */}
+            <button
+              style={{
+                background: "#c03030",
+                color: "#fff",
+                padding: "10px",
+                borderRadius: "2px",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              <MicIcon />
+            </button>
+
+            {/* MESSAGE INPUT */}
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Type your message..."
+              className="flex-1 outline-none"
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "#fff",
+                padding: "8px",
+              }}
+            />
+
+            {/* OFFER PRICE INPUT */}
+            <div style={{ position: "relative" }}>
+              <span
+                style={{
+                  position: "absolute",
+                  left: "8px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  color: "#aaa",
+                  fontSize: "13px",
+                }}
+              >
+                ₹
+              </span>
+
+              <input
+                type="number"
+                value={offer}
+                onChange={(e) => setOffer(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Offer"
+                style={{
+                  width: "100px",
+                  padding: "8px 8px 8px 20px",
+                  background: "#111027",
+                  border: "1px solid #4a4aaa",
+                  color: "#fff",
+                  borderRadius: "2px",
+                }}
+              />
+            </div>
+
+            {/* SEND BUTTON */}
+            <button
+              onClick={handleSend}
+              disabled={!input.trim() || !offer || loading}
+              style={{
+                background:
+                  !input.trim() || !offer || loading ? "#5a4a00" : "#d4920c",
+                color:
+                  !input.trim() || !offer || loading ? "#7a6a20" : "#1a0e00",
+                padding: "9px 18px",
+                borderRadius: "2px",
+                border: "none",
+                cursor:
+                  !input.trim() || !offer || loading ? "not-allowed" : "pointer",
+                fontWeight: "bold",
+                letterSpacing: "2px",
+              }}
+            >
+              SEND ➔
+            </button>
+          </div>
+        </div>
       </div>
-      
+
+    </div>
+  );
+}
+
+/* ── Reusable Character Card ── */
+function CharacterCard({ char, borderColor, shadowColor, rotate, label, labelBg }) {
+  return (
+    <div
+      style={{
+        width: "200px",
+        height: "260px",
+        border: `4px solid ${borderColor}`,
+        background: "#1c1d35",
+        borderRadius: "6px",
+        transform: `rotate(${rotate})`,
+        boxShadow: `0 8px 32px ${shadowColor}, 0 2px 8px rgba(0,0,0,0.6)`,
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+        position: "relative",
+      }}
+    >
+      {/* Image fills the card */}
+      <div
+        style={{
+          flex: 1,
+          background: "#1c1d35",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "10px 8px 6px",
+        }}
+      >
+        {char?.img ? (
+          <img
+            src={char.img}
+            alt={char.name}
+            style={{ width: "100%", height: "190px", objectFit: "contain" }}
+          />
+        ) : (
+          <span style={{ fontSize: "72px" }}>{char?.emoji || "🐭"}</span>
+        )}
+      </div>
+
+      {/* Name label at bottom */}
+      <div
+        style={{
+          background: labelBg,
+          textAlign: "center",
+          color: "#fff",
+          fontWeight: 800,
+          fontSize: "11px",
+          letterSpacing: "2px",
+          textTransform: "uppercase",
+          padding: "7px 4px",
+        }}
+      >
+        {label}
+      </div>
     </div>
   );
 }

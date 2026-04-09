@@ -50,14 +50,20 @@ export const useGame = () => {
         }
     }
 
-    const handleSendMessage = async (message, offer) => {
+    const handleSendMessage = async ({message, offer}) => {
         if (!gameState.gameId) return
 
         try {
             dispatch(setGameLoading(true))
 
             // Add user message
-            dispatch(addGameMessage({ role: "user", content: message }))
+            dispatch(addGameMessage({
+                role: "user",
+                content: {
+                    message,
+                    offer
+                }
+            }))
 
             const data = await sendGameMessage({
                 gameId: gameState.gameId,
