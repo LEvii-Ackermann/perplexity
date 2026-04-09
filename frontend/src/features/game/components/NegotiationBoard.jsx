@@ -9,7 +9,7 @@ const SendIcon = () => (
 );
 
 const MicIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-mic text-white" >
     <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
     <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
     <line x1="12" x2="12" y1="19" y2="22" />
@@ -49,6 +49,9 @@ const handleSend = async () => {
   setOffer("");
 };
 
+  const MAX_ROUNDS = 6;
+  const currentRound = messages.filter(m => m.role === "user").length;
+
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -61,6 +64,38 @@ const handleSend = async () => {
       className="flex flex-col h-screen relative overflow-hidden"
       style={{ background: "#13121f", fontFamily: "'Sora', sans-serif" }}
     >
+      <div
+        style={{
+          position: "absolute",
+          top: "20px",
+          width: "100%",
+          display: "flex",
+          justifyContent: "center",
+          gap: "14px",
+          zIndex: 20,
+        }}
+      >
+        {Array.from({ length: MAX_ROUNDS }).map((_, i) => {
+          const isFilled = i < currentRound;
+          const isLast = currentRound === MAX_ROUNDS;
+
+          return (
+            <div
+              key={i}
+              style={{
+                width: "18px",
+                height: "18px",
+                borderRadius: "50%",
+                background: isFilled ? "#d4920c" : "transparent",
+                border: "2px solid #d4920c",
+                transition: "all 0.3s ease",
+                transform: isFilled ? "scale(1.1)" : "scale(1)",
+                animation: isLast ? "shake 0.4s ease-in-out infinite" : "none",
+              }}
+            />
+          );
+        })}
+      </div>
       {/* ── Central Product Area ── */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
         <div
@@ -229,120 +264,160 @@ const handleSend = async () => {
       </div>
 
       {/* ── Bottom Input ── */}
-      <div className="absolute bottom-0 w-full flex justify-center pb-8 z-10">
-        <div className="relative w-full px-4" style={{ maxWidth: "640px" }}>
+<div className="absolute bottom-2 w-full flex justify-center pb-8 z-10">
+  <div
+    className="relative w-full px-4"
+    style={{ maxWidth: "700px" }}
+  >
 
-          {/* OFFER LABEL */}
-          <div
-            className="absolute font-bold uppercase z-20"
-            style={{
-              top: "-11px",
-              left: "28px",
-              background: "#d4920c",
-              color: "#1a0e00",
-              fontSize: "10px",
-              padding: "2px 10px",
-              letterSpacing: "1.5px",
-              borderRadius: "2px",
-            }}
-          >
-            OFFER INPUT
-          </div>
+    {/* OFFER LABEL */}
+    <div
+      style={{
+        position: "absolute",
+        top: "-12px",
+        left: "50px",
+        background: "#d4920c",
+        color: "#1a0e00",
+        fontSize: "11px",
+        padding: "3px 12px",
+        fontWeight: "bold",
+        letterSpacing: "2px",
+        borderRadius: "4px",
+        transform: "rotate(-3deg)",
+        border: "2px solid black",
+      }}
+    >
+      OFFER INPUT
+    </div>
 
-          {/* MAIN BOX */}
-          <div
-            className="flex items-center gap-2 p-2"
-            style={{
-              background: "#1a192e",
-              border: "2px solid #4a4aaa",
-              borderRadius: "4px",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
-            }}
-          >
-            {/* MIC BUTTON */}
-            <button
-              style={{
-                background: "#c03030",
-                color: "#fff",
-                padding: "10px",
-                borderRadius: "2px",
-                border: "none",
-                cursor: "pointer",
-              }}
-            >
-              <MicIcon />
-            </button>
+    {/* MAIN CONTAINER */}
+    <div
+      style={{
+        display: "flex",
+        alignItems: "stretch",
+        background: "#1a1f3a",
+        borderTop: "5px solid #d4920c",
+        borderRadius: "10px",
+        padding: "14px",
+        gap: "12px",
+        boxShadow: "0 10px 40px rgba(0,0,0,0.6)",
+        minHeight: "110px",
+      }}
+    >
 
-            {/* MESSAGE INPUT */}
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Type your message..."
-              className="flex-1 outline-none"
-              style={{
-                background: "transparent",
-                border: "none",
-                color: "#fff",
-                padding: "8px",
-              }}
-            />
-
-            {/* OFFER PRICE INPUT */}
-            <div style={{ position: "relative" }}>
-              <span
-                style={{
-                  position: "absolute",
-                  left: "8px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  color: "#aaa",
-                  fontSize: "13px",
-                }}
-              >
-                ₹
-              </span>
-
-              <input
-                type="number"
-                value={offer}
-                onChange={(e) => setOffer(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Offer"
-                style={{
-                  width: "100px",
-                  padding: "8px 8px 8px 20px",
-                  background: "#111027",
-                  border: "1px solid #4a4aaa",
-                  color: "#fff",
-                  borderRadius: "2px",
-                }}
-              />
-            </div>
-
-            {/* SEND BUTTON */}
-            <button
-              onClick={handleSend}
-              disabled={!input.trim() || !offer || loading}
-              style={{
-                background:
-                  !input.trim() || !offer || loading ? "#5a4a00" : "#d4920c",
-                color:
-                  !input.trim() || !offer || loading ? "#7a6a20" : "#1a0e00",
-                padding: "9px 18px",
-                borderRadius: "2px",
-                border: "none",
-                cursor:
-                  !input.trim() || !offer || loading ? "not-allowed" : "pointer",
-                fontWeight: "bold",
-                letterSpacing: "2px",
-              }}
-            >
-              SEND ➔
-            </button>
-          </div>
-        </div>
+      {/* LEFT - MIC */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-end",
+          marginBottom: "5px",
+        }}
+      >
+        <button
+          style={{
+            width: "45px",
+            height: "45px",
+            background: "#c03030",
+            border: "3.5px solid #000",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+          }}
+        >
+          <MicIcon />
+        </button>
       </div>
+
+      {/* MIDDLE - TEXT AREA */}
+      <textarea
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder="Type your message..."
+        rows={2}
+        style={{
+          flex: 1,
+          resize: "none",
+          background: "#0f1328",
+          border: "5px solid #f5f5f5",
+          borderRadius: "0.2px",
+          color: "#fff",
+          padding: "12px",
+          fontSize: "15px",
+          outline: "none",
+          lineHeight: "1.4",
+        }}
+      />
+
+      {/* RIGHT SIDE */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "12px",
+        }}
+      >
+
+        {/* OFFER BOX */}
+        <div
+          style={{
+            position: "relative",
+          }}
+        >
+          <span
+            style={{
+              position: "absolute",
+              left: "8px",
+              top: "50%",
+              transform: "translateY(-50%)",
+              color: "#aaa",
+            }}
+          >
+            ₹
+          </span>
+
+          <input
+            type="number"
+            value={offer}
+            onChange={(e) => setOffer(e.target.value)}
+            placeholder="Offer"
+            style={{
+              width: "100px",
+              height: "35px",
+              paddingLeft: "22px",
+              background: "#0f1328",
+              border: "3px solid #d4920c",
+              color: "#fff",
+              borderRadius: "0.2px",
+              outline: "none",
+              fontWeight: "bold",
+            }}
+          />
+        </div>
+
+        {/* SEND BUTTON */}
+        <button
+          onClick={handleSend}
+          disabled={!input.trim() || !offer || loading}
+          style={{
+            width: "100px",
+            height: "37px",
+            background: "#d4920c",
+            color: "#1a0e00",
+            border: "3px solid black",
+            borderRadius: "0.2px",
+            fontWeight: "bold",
+            cursor:
+              !input.trim() || !offer || loading ? "not-allowed" : "pointer",
+          }}
+        >
+          SEND ➔
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
     </div>
   );

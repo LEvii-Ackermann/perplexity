@@ -1,47 +1,119 @@
 import React from "react";
 import { useGame } from "../hooks/useGame.js";
-
-const ITEMS = [
-  { emoji: "⌨️", name: "Limited Ed. Mech Keyboard", originalPrice: 15000 },
-  { emoji: "📱", name: "Smartphone", originalPrice: 15000 },
-  { emoji: "👟", name: "Sneakers", originalPrice: 3500 },
-  { emoji: "🎧", name: "Headphones", originalPrice: 4000 },
-  { emoji: "⌚", name: "Watch", originalPrice: 8000 },
-  { emoji: "🕶️", name: "Sunglasses", originalPrice: 1200 },
-];
+import keyboardImg from "../../../assets/Keyboard-Background-PNG-Image.webp";
 
 export default function ItemSelection() {
   const { handleSelectProduct, loading } = useGame();
+  const handleStart = () => handleSelectProduct("Mechanical Keyboard", 50000);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-[#0d0d0d] font-sora p-6">
-      <div className="text-[0.72rem] text-orange-500/80 tracking-widest uppercase font-semibold mb-2">
-        Bargain Mode
-      </div>
-      <h1 className="text-3xl font-semibold text-[#e8e8e8] mb-2 text-center">
-        Pick something to bargain
-      </h1>
-      <p className="text-sm text-white/35 mb-9 text-center">
-        Outsmart the shopkeeper. Get the best deal.
-      </p>
+    <div className="relative min-h-screen w-full grid overflow-hidden"
+      style={{ background: "#0a0a0a", gridTemplateColumns: "1fr 2fr 1fr", fontFamily: "'Noto Sans', sans-serif" }}>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-2xl w-full">
-        {ITEMS.map((item) => (
-          <button
-            key={item.name}
-            className="flex flex-col items-center justify-center gap-3 p-6 rounded-2xl border border-white/5 bg-[#131313] hover:border-orange-500/40 hover:bg-[#1a1a1a] hover:-translate-y-1 transition-all duration-200 cursor-pointer"
-            onClick={() => handleSelectProduct(item.name, item.originalPrice)}
-            disabled={loading}
-          >
-            <span className="text-4xl">{item.emoji}</span>
-            <span className="text-sm text-white/70 font-medium">
-              {item.name}
-            </span>
-            <span className="text-xs text-white/35">
-              ₹{item.originalPrice.toLocaleString("en-IN")}
-            </span>
-          </button>
-        ))}
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans:wght@400;700&display=swap');
+        .bebas { font-family: 'Bebas Neue', sans-serif; }
+        .stripe-bg::before { content:''; position:absolute; inset:0; pointer-events:none;
+          background: repeating-linear-gradient(-55deg, transparent, transparent 40px, rgba(255,200,0,0.018) 40px, rgba(255,200,0,0.018) 41px); }
+        .cta-deal:hover { transform: translate(-2px,-2px) !important; box-shadow: 7px 7px 0 #e63c2f !important; }
+        .cta-deal:active { transform: translate(2px,2px) !important; box-shadow: 2px 2px 0 #e63c2f !important; }
+      `}</style>
+
+      {/* Stripe bg */}
+      <div className="stripe-bg absolute inset-0 pointer-events-none" />
+
+      {/* ── LEFT PANEL ── */}
+      <div className="relative z-10 flex flex-col justify-center px-12 py-16 border-r border-white/[0.06]">
+        <p className="bebas text-[0.55rem] tracking-[5px] text-yellow-500/50 uppercase mb-8">Today's Deal</p>
+        <p className="bebas text-[5.5rem] leading-none text-yellow-400 mb-1">₹50K</p>
+        <p className="text-[0.6rem] tracking-[4px] text-white/30 uppercase mb-9">Market price · Can you beat it?</p>
+
+        <div className="flex flex-col gap-5">
+          {[["6", "Rounds only"], ["1V1", "You vs AI Seller"], ["₹?", "Your best offer"]].map(([v, k]) => (
+            <div key={k} className="border-l-2 pl-3" style={{ borderColor: "rgba(255,200,0,0.25)" }}>
+              <p className="bebas text-2xl text-white leading-none">{v}</p>
+              <p className="text-[0.58rem] tracking-[3px] text-white/30 uppercase mt-0.5">{k}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── CENTER PANEL ── */}
+      <div className="relative z-10 flex flex-col items-center justify-center px-6 py-16">
+        {/* Banner */}
+        <div className="bebas text-white text-[1rem] tracking-[6px] px-7 py-2 rounded-sm mb-12"
+          style={{ background: "#e63c2f", transform: "rotate(-2deg)", boxShadow: "3px 3px 0 #ffc800" }}>
+          BARGAIN ARENA
+        </div>
+
+        {/* Title */}
+        <h1 className="bebas text-center tracking-wide mb-2.5">
+          <span className="block leading-none text-white/50" style={{ fontSize: "clamp(3rem, 6vw, 4.5rem)", letterSpacing: "6px" }}>THE AI WON'T GO EASY.</span>
+          <span className="block leading-none" style={{ fontSize: "clamp(4rem, 9vw, 7rem)", color: "#ffc800", letterSpacing: "-1px" }}>WILL YOU?</span>
+        </h1>
+
+        <p className="text-[0.72rem] tracking-[4px] text-white/30 uppercase mb-9 text-center">
+          Negotiate smart · Win the deal
+        </p>
+
+        {/* Keyboard */}
+        <div className="relative mb-9">
+          <img
+            src={keyboardImg}
+            alt="Mechanical Keyboard"
+            className="block"
+            style={{
+              width: 420, maxWidth: "85%",
+              filter: "drop-shadow(0 24px 60px rgba(255,200,0,0.2)) drop-shadow(0 4px 24px rgba(0,0,0,0.9))"
+            }}
+          />
+          <span className="bebas absolute text-white text-[0.7rem] tracking-[3px] px-3 py-1 rounded-sm"
+            style={{ top: 0, left: -16, background: "#e63c2f", transform: "rotate(-7deg)", boxShadow: "2px 2px 0 rgba(0,0,0,0.4)" }}>
+            FULL MECH
+          </span>
+          <span className="bebas absolute text-[0.7rem] tracking-[3px] px-3 py-1 rounded-sm"
+            style={{ bottom: 10, right: -16, background: "#ffc800", color: "#0a0a0a", transform: "rotate(5deg)", boxShadow: "2px 2px 0 rgba(0,0,0,0.4)" }}>
+            HOT ITEM
+          </span>
+        </div>
+
+        {/* CTA */}
+        <button
+          className="cta-deal bebas text-[1.3rem] tracking-[5px] px-14 py-4 rounded-sm border-none cursor-pointer transition-all duration-100"
+          onClick={handleStart}
+          disabled={loading}
+          style={{ background: "#ffc800", color: "#0a0a0a", boxShadow: "5px 5px 0 #e63c2f" }}>
+          DEAL KARO →
+        </button>
+        <p className="text-[0.58rem] tracking-[3px] text-white/20 uppercase mt-3 text-center">
+          Character chooser up next
+        </p>
+      </div>
+
+      {/* ── RIGHT PANEL ── */}
+      <div className="relative z-10 flex flex-col justify-center items-end text-right px-12 py-16 border-l border-white/[0.06]">
+        <p className="bebas text-[0.55rem] tracking-[5px] text-yellow-500/50 uppercase mb-8">How it works</p>
+        <p className="bebas text-[1rem] tracking-[4px] text-white/20 mb-5">THE RULES</p>
+
+        <div className="flex flex-col gap-6">
+          {[
+            ["01", "Pick your character", "Buyer or Seller persona"],
+            ["02", "Make your offer", "Type or speak your price"],
+            ["03", "AI counters back", "It haggles like a real seller"],
+            ["04", "Close the deal", "Best price in 6 rounds wins"],
+          ].map(([n, title, desc]) => (
+            <div key={n} className="border-r-2 pr-3.5" style={{ borderColor: "rgba(255,200,0,0.25)" }}>
+              <p className="bebas text-[2.5rem] leading-none text-yellow-400 opacity-40">{n}</p>
+              <p className="text-[0.78rem] tracking-[2px] text-white font-bold uppercase">{title}</p>
+              <p className="text-[0.65rem] tracking-[2px] text-white/40 uppercase mt-0.5">{desc}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-10 pt-6 border-t border-white/[0.06] w-full flex flex-col items-end">
+          <p className="bebas text-[1.4rem] tracking-[2px] text-white leading-none">Mechanical Keyboard</p>
+          <p className="text-[0.58rem] tracking-[3px] text-white/25 uppercase mt-1">Today's negotiation item</p>
+        </div>
       </div>
     </div>
   );
