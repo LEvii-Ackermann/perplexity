@@ -10,7 +10,12 @@ export async function startGame({ product, originalPrice }) {
     return response.data
 }
 
-export async function sendGameMessage({ gameId, message }) {
-    const response = await api.post("/api/game/message", { gameId, message })
+export async function sendGameMessage({ gameId, message, offer }) {
+    const response = await api.post("/api/game/message", { gameId, message, offer })
+    return response.data
+}
+
+export async function fetchLeaderboard() {
+    const response = await api.get("/api/game/leaderboard")
     return response.data
 }

@@ -1,10 +1,14 @@
 import { useDispatch, useSelector } from "react-redux"
-import { startGame, sendGameMessage } from "../service/game.api.js"
+import { startGame, sendGameMessage, fetchLeaderboard } from "../service/game.api.js"
 import {
+    setGameView,
+    selectProduct,
+    selectCharacters,
     setGameStarted,
     addGameMessage,
     setGameStatus,
     setScoreCard,
+    setLeaderboard,
     setGameLoading,
     setGameError,
     resetGame,
@@ -14,21 +18,30 @@ export const useGame = () => {
     const dispatch = useDispatch()
     const gameState = useSelector((state) => state.game)
 
-    const handleStartGame = async ({ product, originalPrice }) => {
+    const handleSelectProduct = (product, originalPrice) => {
+        dispatch(selectProduct({ product, originalPrice }))
+    }
+
+    const handleSelectCharacters = (buyer, seller) => {
+        dispatch(selectCharacters({ buyer, seller }))
+    }
+
+    const handleStartGame = async () => {
         try {
             dispatch(setGameLoading(true))
-            const data = await startGame({ product, originalPrice })
+            const data = await startGame({ 
+                product: gameState.product, 
+                originalPrice: gameState.originalPrice 
+            })
 
             dispatch(setGameStarted({
-                gameId: data.gameId,
-                product,
-                originalPrice,
+                gameId: data.gameId
             }))
 
             // First AI message
             dispatch(addGameMessage({
                 role: "ai",
-                content: `Haan bolo, ${product} chahiye? Price hai ₹${originalPrice}. Kya offer karoge? 😏`
+                content: `Haan bolo, ${gameState.product} chahiye? Price hai ₹${gameState.originalPrice}. Kya offer karoge? 😏`
             }))
         } catch (error) {
             dispatch(setGameError(error.message))
@@ -37,7 +50,7 @@ export const useGame = () => {
         }
     }
 
-    const handleSendMessage = async (message) => {
+    const handleSendMessage = async (message, offer) => {
         if (!gameState.gameId) return
 
         try {
@@ -49,15 +62,21 @@ export const useGame = () => {
             const data = await sendGameMessage({
                 gameId: gameState.gameId,
                 message,
+                offer
             })
 
             // Add AI reply
-            dispatch(addGameMessage({ role: "ai", content: data.reply }))
+            if (data.reply) {
+                dispatch(addGameMessage({ role: "ai", content: data.reply }))
+            }
 
             dispatch(setGameStatus(data.status))
 
             if (data.status === "completed" && data.scoreCard) {
                 dispatch(setScoreCard(data.scoreCard))
+                dispatch(setGameView("result"))
+            } else if (data.status === "failed") {
+                dispatch(setGameView("result"))
             }
         } catch (error) {
             dispatch(setGameError(error.message))
@@ -66,14 +85,35 @@ export const useGame = () => {
         }
     }
 
+    const handleFetchLeaderboard = async () => {
+        try {
+            dispatch(setGameLoading(true))
+            const data = await fetchLeaderboard()
+            dispatch(setLeaderboard(data.leaderboard))
+            dispatch(setGameView("leaderboard"))
+        } catch (error) {
+            dispatch(setGameError(error.message))
+        } finally {
+            dispatch(setGameLoading(false))
+        }
+    }
+
+    const handleMainGameView = () => {
+        dispatch(setGameView("negotiation"))
+    }
+
     const handleResetGame = () => {
         dispatch(resetGame())
     }
 
     return {
         ...gameState,
+        handleSelectProduct,
+        handleSelectCharacters,
         handleStartGame,
         handleSendMessage,
+        handleFetchLeaderboard,
+        handleMainGameView,
         handleResetGame,
     }
 }
