@@ -5,82 +5,119 @@ export default function ScoreBoard() {
   const { scoreCard, status, handleFetchLeaderboard, handleResetGame, selectedBuyer, selectedSeller } = useGame();
 
   const isSuccess = status === "completed";
-
-  // Calculate discount percentage if scoreCard available
-  let discountPercent = 0;
-  if (scoreCard && scoreCard.originalPrice) {
-      discountPercent = Math.round(((scoreCard.originalPrice - scoreCard.finalPrice) / scoreCard.originalPrice) * 100);
-  }
+  const discountPercent = scoreCard?.originalPrice
+    ? Math.round(((scoreCard.originalPrice - scoreCard.finalPrice) / scoreCard.originalPrice) * 100)
+    : 0;
+  const saved = (scoreCard?.originalPrice || 0) - (scoreCard?.finalPrice || 0);
+  const scoreVal = scoreCard?.score || 0;
+  const scoreBarWidth = `${scoreVal}%`;
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-[#222225] font-sora p-6">
-      
-      {/* Top character avatars - Small floating icons */}
-      <div className="flex justify-center gap-8 mb-10 w-full max-w-sm">
-        <div className="w-16 h-20 border-2 border-yellow-500 bg-yellow-400/20 flex flex-col justify-center items-center shadow-lg -rotate-6">
-           <span className="text-3xl">{selectedBuyer?.emoji || "🐭"}</span>
+    <div className="relative min-h-screen w-full flex flex-col items-center justify-center overflow-hidden px-6 py-10"
+      style={{ background: "#0a0a0a", fontFamily: "'Noto Sans', sans-serif" }}>
+
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans:wght@400;700&display=swap');
+        .bebas { font-family: 'Bebas Neue', sans-serif; }
+        .stripe::before { content:''; position:absolute; inset:0; pointer-events:none;
+          background: repeating-linear-gradient(-55deg, transparent, transparent 40px, rgba(255,200,0,0.015) 40px, rgba(255,200,0,0.015) 41px); }
+        .btn-primary:hover { transform: translate(-2px,-2px) !important; box-shadow: 6px 6px 0 #e63c2f !important; }
+        .btn-primary:active { transform: translate(2px,2px) !important; box-shadow: 2px 2px 0 #e63c2f !important; }
+        .btn-secondary:hover { border-color: rgba(255,255,255,0.3) !important; color: #fff !important; }
+      `}</style>
+
+      <div className="stripe absolute inset-0 pointer-events-none" />
+
+      {/* Characters */}
+      <div className="relative z-10 flex items-center gap-6 mb-9">
+        <div className="flex flex-col items-center gap-1.5">
+          <div className="w-20 h-24 flex items-center justify-center text-5xl"
+            style={{ border: "2px solid #ffc800", background: "rgba(255,200,0,0.08)", transform: "rotate(-4deg)" }}>
+            {selectedBuyer?.emoji || "🐭"}
+          </div>
+          <span className="bebas text-[0.55rem] tracking-[4px] text-yellow-400/50 uppercase">You</span>
         </div>
-        <div className="w-16 h-20 border-2 border-[#0eb7b1] bg-[#0eb7b1]/20 flex flex-col justify-center items-center shadow-lg rotate-6">
-           <span className="text-3xl">{selectedSeller?.emoji || "😼"}</span>
+        <span className="bebas text-[2rem] tracking-[4px] text-white/15">VS</span>
+        <div className="flex flex-col items-center gap-1.5">
+          <div className="w-20 h-24 flex items-center justify-center text-5xl"
+            style={{ border: "2px solid #e63c2f", background: "rgba(230,60,47,0.08)", transform: "rotate(4deg)" }}>
+            {selectedSeller?.emoji || "😼"}
+          </div>
+          <span className="bebas text-[0.55rem] tracking-[4px] uppercase" style={{ color: "rgba(230,60,47,0.5)" }}>AI Seller</span>
         </div>
       </div>
 
-      <div className="w-full max-w-xl animate-[fadeUp_0.4s_ease_both]">
-        {isSuccess ? (
-          <div className="bg-[#ffcb47] text-[#4d2a00] p-6 shadow-2xl relative flex flex-col items-center justify-center">
-             <h1 className="text-4xl font-black italic uppercase tracking-wider mb-6 text-center shadow-text-custom">DEAL SECURED!</h1>
-             
-             <div className="flex gap-4 w-full">
-                {/* Final Price Block */}
-                <div className="flex-1 bg-[#1c1a17] text-white p-3 flex flex-col text-center shadow-inner pt-4">
-                   <span className="text-[0.6rem] font-bold text-orange-400 uppercase tracking-widest mb-1 leading-none">Final Price</span>
-                   <span className="text-3xl font-black italic text-[#ffc844]">₹{scoreCard?.finalPrice?.toLocaleString("en-IN") || 0}</span>
-                </div>
+      {/* Result Banner */}
+      <div className="relative z-10 w-full max-w-xl flex items-center justify-center mb-9 px-8 py-2.5"
+        style={{
+          background: isSuccess ? "#ffc800" : "#e63c2f",
+          transform: "rotate(-1deg)",
+          boxShadow: isSuccess ? "5px 5px 0 #e63c2f" : "5px 5px 0 #ffc800"
+        }}>
+        <span className="bebas text-[2.2rem] tracking-[4px]" style={{ color: isSuccess ? "#0a0a0a" : "#fff" }}>
+          {isSuccess ? "DEAL SECURED!" : "DEAL CANCELLED"}
+        </span>
+      </div>
 
-                {/* You Saved Block */}
-                <div className="flex-1 bg-white text-black p-3 flex flex-col text-center border-2 border-green-500 shadow-inner pt-4">
-                   <span className="text-[0.6rem] font-bold text-gray-500 uppercase tracking-widest mb-1 leading-none">You Saved</span>
-                   <span className="text-3xl font-black italic text-green-500">
-                     ₹{(scoreCard?.originalPrice - scoreCard?.finalPrice)?.toLocaleString("en-IN") || 0}
-                   </span>
-                </div>
-
-                {/* Discount Block */}
-                <div className="flex-1 bg-[#d5f6ff] text-[#0f5c7b] p-3 flex flex-col text-center border-2 border-[#54b4d3] shadow-inner pt-4">
-                   <span className="text-[0.6rem] font-bold text-[#0f5c7b]/60 uppercase tracking-widest mb-1 leading-none">Discount</span>
-                   <span className="text-3xl font-black italic text-[#0f5c7b]">{discountPercent}% OFF</span>
-                </div>
-             </div>
-             
-             {/* Note to User requested by instructions */}
-             <div className="mt-4 text-[0.65rem] opacity-70 font-bold uppercase tracking-widest">
-                * Score automatically linked to your account profile
-             </div>
+      {/* Score Hero */}
+      <div className="relative z-10 w-full max-w-xl mb-0.5"
+        style={{ background: "#111", border: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="flex flex-col items-center justify-center px-6 py-7 relative">
+          <span className="bebas text-[0.5rem] tracking-[5px] text-white/25 absolute top-3">YOUR SCORE</span>
+          <div className="flex items-end gap-1">
+            <span className="bebas leading-none text-yellow-400" style={{ fontSize: "7rem", letterSpacing: "-2px" }}>
+              {scoreVal}
+            </span>
+            <span className="bebas text-[2rem] text-yellow-400/30 mb-3">/100</span>
           </div>
-        ) : (
-          <div className="bg-[#2d2d31] border-2 border-red-500/50 text-white p-6 shadow-2xl relative flex flex-col items-center justify-center">
-             <h1 className="text-4xl font-black italic uppercase tracking-wider mb-6 text-center text-red-500">DEAL CANCELLED</h1>
-             <p className="text-gray-400 font-medium">Bargaining failed. You didn't secure a good price.</p>
+          <div className="w-48 h-1 rounded-full mt-2" style={{ background: "rgba(255,255,255,0.08)" }}>
+            <div className="h-1 rounded-full" style={{ width: scoreBarWidth, background: "#ffc800" }} />
           </div>
-        )}
-
-        {/* Buttons */}
-        <div className="mt-8 flex flex-col gap-4 items-center">
-            <button 
-               onClick={handleFetchLeaderboard}
-               className="bg-[#25256e] hover:bg-[#343485] text-[#ffcb47] px-8 py-3 w-3/4 text-center font-bold italic tracking-widest uppercase transition-colors"
-            >
-               LOADING SCORES...
-            </button>
-
-            <button 
-               onClick={handleResetGame}
-               className="bg-[#ffcb47] hover:bg-[#fbd366] text-[#4d2a00] px-8 py-3 w-1/2 text-center font-bold uppercase transition-colors flex justify-center items-center gap-2"
-            >
-               <span className="text-xl leading-none">↺</span> PLAY AGAIN
-            </button>
         </div>
       </div>
+
+      {/* Stats Grid */}
+      {isSuccess && (
+        <div className="relative z-10 grid grid-cols-3 gap-0.5 w-full max-w-xl mb-7">
+          {[
+            { val: `₹${scoreCard?.finalPrice?.toLocaleString("en-IN") || 0}`, key: "Final Price", color: "#ffc800" },
+            { val: `₹${saved.toLocaleString("en-IN")}`, key: "You Saved", color: "#4ade80" },
+            { val: `${discountPercent}% OFF`, key: "Discount", color: "#60a5fa" },
+          ].map(({ val, key, color }) => (
+            <div key={key} className="flex flex-col items-center justify-center text-center py-5 px-3"
+              style={{ background: "#111", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <span className="bebas text-[1.8rem] leading-none" style={{ color }}>{val}</span>
+              <span className="text-[0.52rem] tracking-[3px] text-white/30 uppercase mt-1">{key}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!isSuccess && (
+        <p className="relative z-10 text-white/30 text-sm tracking-widest uppercase mb-7">
+          Bargaining failed. Better luck next time.
+        </p>
+      )}
+
+      <div className="relative z-10 w-full max-w-xl h-px mb-7" style={{ background: "rgba(255,255,255,0.06)" }} />
+
+      {/* Buttons */}
+      <div className="relative z-10 flex flex-col items-center gap-3 w-full max-w-xl">
+        <button className="btn-primary bebas w-full text-[1.1rem] tracking-[5px] py-4 border-none rounded-sm cursor-pointer transition-all duration-100"
+          onClick={handleFetchLeaderboard}
+          style={{ background: "#ffc800", color: "#0a0a0a", boxShadow: "4px 4px 0 #e63c2f" }}>
+          VIEW LEADERBOARD →
+        </button>
+        <button className="btn-secondary bebas w-3/5 text-[1rem] tracking-[5px] py-3 rounded-sm cursor-pointer transition-all duration-100"
+          onClick={handleResetGame}
+          style={{ background: "transparent", color: "rgba(255,255,255,0.35)", border: "1px solid rgba(255,255,255,0.1)" }}>
+          ↺ PLAY AGAIN
+        </button>
+      </div>
+
+      <p className="relative z-10 bebas text-[0.52rem] tracking-[3px] text-white/18 uppercase mt-6">
+        * Score determines your leaderboard rank
+      </p>
     </div>
   );
 }
