@@ -3,7 +3,6 @@ import { RouterProvider } from 'react-router'
 import { router } from './app.routes.jsx'
 import { useAuth } from '../features/auth/hooks/useAuth.js'
 import { useEffect } from 'react'
-import ScoreBoard from '../features/game/components/ScoreBoard.jsx'
  
 const App = () => {
 

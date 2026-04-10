@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useGame } from "../hooks/useGame.js";
+import { Navigate } from "react-router";
 import keyboardImg from "../../../assets/Keyboard-Background-PNG-Image.webp";
 
 const SendIcon = () => (
@@ -19,12 +20,26 @@ const MicIcon = () => (
 export default function NegotiationBoard() {
   const {
     product,
+    originalPrice,
+    gameId,
     messages,
     loading,
     selectedBuyer,
     selectedSeller,
     handleSendMessage,
   } = useGame();
+
+  if (!product || !originalPrice) {
+    return <Navigate to="/game/item-selection" replace />;
+  }
+
+  if (!selectedBuyer || !selectedSeller) {
+    return <Navigate to="/game/character-selection" replace />;
+  }
+
+  if (!gameId) {
+    return <Navigate to="/game/character-selection" replace />;
+  }
 
   const [input, setInput] = useState("");
   const [offer, setOffer] = useState("");

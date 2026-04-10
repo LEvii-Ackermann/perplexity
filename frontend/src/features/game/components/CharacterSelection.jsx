@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useGame } from "../hooks/useGame.js";
+import { Navigate } from "react-router";
 
 import doraemon from "../../../assets/doraemon_-happy_-character_-art-0b2iuj8yrk0phmov-depositphotos-bgremover.png";
 import shinchan from "../../../assets/shinchan-png-photo-750x750.webp";
@@ -25,9 +26,13 @@ const SELLERS = [
 ];
 
 export default function CharacterSelection() {
-  const { handleSelectCharacters, handleStartGame, loading } = useGame();
+  const { product, originalPrice, handleSelectCharacters, handleStartGame, loading } = useGame();
   const [selectedBuyer, setSelectedBuyer] = useState("b4");
   const [selectedSeller, setSelectedSeller] = useState("s4");
+
+  if (!product || !originalPrice) {
+    return <Navigate to="/game/item-selection" replace />;
+  }
 
   const onStart = async () => {
     const buyer = BUYERS.find((b) => b.id === selectedBuyer);

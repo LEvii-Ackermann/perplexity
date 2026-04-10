@@ -1,15 +1,46 @@
 import React from "react";
 import { useGame } from "../hooks/useGame.js";
+import { Navigate } from "react-router";
+import { useEffect } from "react";
 
 export default function ScoreBoard() {
-  const { scoreCard, status, handleFetchLeaderboard, handleResetGame, selectedBuyer, selectedSeller } = useGame();
+  const {
+    scoreCard,
+    latestScore,
+    userRank,
+    status,
+    handleFetchLeaderboard,
+    handleFetchLatestScore,
+    handleFetchUserRank,
+    handleResetGame,
+    selectedBuyer,
+    selectedSeller,
+  } = useGame();
 
+  if (!selectedBuyer || !selectedSeller) {
+    return <Navigate to="/game/character-selection" replace />;
+  }
+
+  if (status !== "completed" && status !== "failed") {
+    return <Navigate to="/game/negotiation" replace />;
+  }
+
+  useEffect(() => {
+    if (!latestScore) {
+      handleFetchLatestScore();
+    }
+    if (!userRank) {
+      handleFetchUserRank();
+    }
+  }, []);
+
+  const effectiveScore = scoreCard || latestScore;
   const isSuccess = status === "completed";
-  const discountPercent = scoreCard?.originalPrice
-    ? Math.round(((scoreCard.originalPrice - scoreCard.finalPrice) / scoreCard.originalPrice) * 100)
+  const discountPercent = effectiveScore?.originalPrice
+    ? Math.round(((effectiveScore.originalPrice - effectiveScore.finalPrice) / effectiveScore.originalPrice) * 100)
     : 0;
-  const saved = (scoreCard?.originalPrice || 0) - (scoreCard?.finalPrice || 0);
-  const scoreVal = scoreCard?.score || 0;
+  const saved = (effectiveScore?.originalPrice || 0) - (effectiveScore?.finalPrice || 0);
+  const scoreVal = effectiveScore?.score || 0;
   const scoreBarWidth = `${scoreVal}%`;
 
   return (
@@ -31,17 +62,33 @@ export default function ScoreBoard() {
       {/* Characters */}
       <div className="relative z-10 flex items-center gap-6 mb-9">
         <div className="flex flex-col items-center gap-1.5">
-          <div className="w-20 h-24 flex items-center justify-center text-5xl"
+          <div className="w-20 h-24 flex items-center justify-center"
             style={{ border: "2px solid #ffc800", background: "rgba(255,200,0,0.08)", transform: "rotate(-4deg)" }}>
-            {selectedBuyer?.emoji || "🐭"}
+            {selectedBuyer?.img ? (
+              <img
+                src={selectedBuyer.img}
+                alt={selectedBuyer.name}
+                className="w-full h-full object-contain"
+              />
+            ) : (
+              <span className="text-5xl">🐭</span>
+            )}
           </div>
           <span className="bebas text-[0.55rem] tracking-[4px] text-yellow-400/50 uppercase">You</span>
         </div>
         <span className="bebas text-[2rem] tracking-[4px] text-white/15">VS</span>
         <div className="flex flex-col items-center gap-1.5">
-          <div className="w-20 h-24 flex items-center justify-center text-5xl"
+          <div className="w-20 h-24 flex items-center justify-center"
             style={{ border: "2px solid #e63c2f", background: "rgba(230,60,47,0.08)", transform: "rotate(4deg)" }}>
-            {selectedSeller?.emoji || "😼"}
+            {selectedSeller?.img ? (
+              <img
+                src={selectedSeller.img}
+                alt={selectedSeller.name}
+                className="w-full h-full object-contain"
+              />
+            ) : (
+              <span className="text-5xl">😼</span>
+            )}
           </div>
           <span className="bebas text-[0.55rem] tracking-[4px] uppercase" style={{ color: "rgba(230,60,47,0.5)" }}>AI Seller</span>
         </div>
@@ -73,6 +120,11 @@ export default function ScoreBoard() {
           <div className="w-48 h-1 rounded-full mt-2" style={{ background: "rgba(255,255,255,0.08)" }}>
             <div className="h-1 rounded-full" style={{ width: scoreBarWidth, background: "#ffc800" }} />
           </div>
+          {userRank?.rank && (
+            <p className="bebas text-[0.7rem] tracking-[3px] text-white/40 uppercase mt-3">
+              Current Rank: #{userRank.rank} / {userRank.totalPlayers}
+            </p>
+          )}
         </div>
       </div>
 
@@ -80,7 +132,7 @@ export default function ScoreBoard() {
       {isSuccess && (
         <div className="relative z-10 grid grid-cols-3 gap-0.5 w-full max-w-xl mb-7">
           {[
-            { val: `₹${scoreCard?.finalPrice?.toLocaleString("en-IN") || 0}`, key: "Final Price", color: "#ffc800" },
+            { val: `₹${effectiveScore?.finalPrice?.toLocaleString("en-IN") || 0}`, key: "Final Price", color: "#ffc800" },
             { val: `₹${saved.toLocaleString("en-IN")}`, key: "You Saved", color: "#4ade80" },
             { val: `${discountPercent}% OFF`, key: "Discount", color: "#60a5fa" },
           ].map(({ val, key, color }) => (

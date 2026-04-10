@@ -1,13 +1,21 @@
 import { useDispatch, useSelector } from "react-redux"
-import { startGame, sendGameMessage, fetchLeaderboard } from "../service/game.api.js"
+import { useNavigate } from "react-router"
 import {
-    setGameView,
+    startGame,
+    sendGameMessage,
+    fetchLeaderboard,
+    fetchLatestScore,
+    fetchUserRank,
+} from "../service/game.api.js"
+import {
     selectProduct,
     selectCharacters,
     setGameStarted,
     addGameMessage,
     setGameStatus,
     setScoreCard,
+    setLatestScore,
+    setUserRank,
     setLeaderboard,
     setGameLoading,
     setGameError,
@@ -16,10 +24,12 @@ import {
 
 export const useGame = () => {
     const dispatch = useDispatch()
+    const navigate = useNavigate()
     const gameState = useSelector((state) => state.game)
 
     const handleSelectProduct = (product, originalPrice) => {
         dispatch(selectProduct({ product, originalPrice }))
+        navigate("/game/character-selection")
     }
 
     const handleSelectCharacters = (buyer, seller) => {
@@ -43,6 +53,8 @@ export const useGame = () => {
                 role: "ai",
                 content: `Haan bolo, ${gameState.product} chahiye? Price hai ₹${gameState.originalPrice}. Kya offer karoge? 😏`
             }))
+
+            navigate("/game/negotiation")
         } catch (error) {
             dispatch(setGameError(error.message))
         } finally {
@@ -80,9 +92,9 @@ export const useGame = () => {
 
             if (data.status === "completed" && data.scoreCard) {
                 dispatch(setScoreCard(data.scoreCard))
-                dispatch(setGameView("result"))
+                navigate("/game/scoreboard")
             } else if (data.status === "failed") {
-                dispatch(setGameView("result"))
+                navigate("/game/scoreboard")
             }
         } catch (error) {
             dispatch(setGameError(error.message))
@@ -91,12 +103,14 @@ export const useGame = () => {
         }
     }
 
-    const handleFetchLeaderboard = async () => {
+    const handleFetchLeaderboard = async ({ navigateToLeaderboard = true } = {}) => {
         try {
             dispatch(setGameLoading(true))
             const data = await fetchLeaderboard()
             dispatch(setLeaderboard(data.leaderboard))
-            dispatch(setGameView("leaderboard"))
+            if (navigateToLeaderboard) {
+                navigate("/game/leaderboard")
+            }
         } catch (error) {
             dispatch(setGameError(error.message))
         } finally {
@@ -104,12 +118,39 @@ export const useGame = () => {
         }
     }
 
-    const handleMainGameView = () => {
-        dispatch(setGameView("negotiation"))
+    const handleFetchLatestScore = async () => {
+        try {
+            dispatch(setGameLoading(true))
+            const data = await fetchLatestScore()
+            dispatch(setLatestScore(data))
+            return data
+        } catch (error) {
+            if (error?.response?.status !== 404) {
+                dispatch(setGameError(error.message))
+            }
+            return null
+        } finally {
+            dispatch(setGameLoading(false))
+        }
+    }
+
+    const handleFetchUserRank = async () => {
+        try {
+            dispatch(setGameLoading(true))
+            const data = await fetchUserRank()
+            dispatch(setUserRank(data))
+            return data
+        } catch (error) {
+            dispatch(setGameError(error.message))
+            return null
+        } finally {
+            dispatch(setGameLoading(false))
+        }
     }
 
     const handleResetGame = () => {
         dispatch(resetGame())
+        navigate("/game/item-selection")
     }
 
     return {
@@ -119,7 +160,8 @@ export const useGame = () => {
         handleStartGame,
         handleSendMessage,
         handleFetchLeaderboard,
-        handleMainGameView,
+        handleFetchLatestScore,
+        handleFetchUserRank,
         handleResetGame,
     }
 }

@@ -1,16 +1,7 @@
 import React from "react";
-import { useGame } from "../hooks/useGame.js";
-
-// Import UI Components from our redesign
-import ItemSelection from "../components/ItemSelection.jsx";
-import CharacterSelection from "../components/CharacterSelection.jsx";
-import NegotiationBoard from "../components/NegotiationBoard.jsx";
-import ScoreBoard from "../components/ScoreBoard.jsx";
-import Leaderboard from "../components/Leaderboard.jsx";
+import { Outlet } from "react-router";
 
 export default function Game() {
-  const { view } = useGame();
-
   return (
     <>
       <style>{`
@@ -22,12 +13,7 @@ export default function Game() {
           text-shadow: 2px 2px 0px rgba(0,0,0,0.2);
         }
       `}</style>
-
-      {view === "item_selection" && <ItemSelection />}
-      {view === "character_selection" && <CharacterSelection />}
-      {view === "negotiation" && <NegotiationBoard />}
-      {view === "result" && <ScoreBoard />}
-      {view === "leaderboard" && <Leaderboard />}
+      <Outlet />
     </>
   );
 }

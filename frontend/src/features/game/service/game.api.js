@@ -19,3 +19,13 @@ export async function fetchLeaderboard() {
     const response = await api.get("/api/game/leaderboard")
     return response.data
 }
+
+export async function fetchLatestScore() {
+    const response = await api.get("/api/game/score")
+    return response.data
+}
+
+export async function fetchUserRank() {
+    const response = await api.get("/api/game/userRank")
+    return response.data
+}

@@ -1,7 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit"
 
 const initialState = {
-    view: "item_selection", // item_selection | character_selection | negotiation | leaderboard
     gameId: null,
     product: null,
     originalPrice: null,
@@ -10,6 +9,8 @@ const initialState = {
     messages: [],
     status: "idle",     // idle | ongoing | completed | failed
     scoreCard: null,
+    latestScore: null,
+    userRank: null,
     loading: false,
     error: null,
     leaderboard: [],
@@ -19,18 +20,13 @@ const gameSlice = createSlice({
     name: "game",
     initialState,
     reducers: {
-        setGameView(state, action) {
-            state.view = action.payload;
-        },
         selectProduct(state, action) {
             state.product = action.payload.product;
             state.originalPrice = action.payload.originalPrice;
-            state.view = "character_selection";
         },
         selectCharacters(state, action) {
             state.selectedBuyer = action.payload.buyer;
             state.selectedSeller = action.payload.seller;
-            // Optionally, we transitions to negotiation view after the API call finishes.
         },
         setGameStarted(state, action) {
             const { gameId } = action.payload
@@ -39,7 +35,6 @@ const gameSlice = createSlice({
             state.status = "ongoing"
             state.scoreCard = null
             state.error = null
-            state.view = "negotiation"
         },
         addGameMessage(state, action) {
             state.messages.push(action.payload)
@@ -49,6 +44,12 @@ const gameSlice = createSlice({
         },
         setScoreCard(state, action) {
             state.scoreCard = action.payload
+        },
+        setLatestScore(state, action) {
+            state.latestScore = action.payload
+        },
+        setUserRank(state, action) {
+            state.userRank = action.payload
         },
         setLeaderboard(state, action) {
             state.leaderboard = action.payload
@@ -66,13 +67,14 @@ const gameSlice = createSlice({
 })
 
 export const {
-    setGameView,
     selectProduct,
     selectCharacters,
     setGameStarted,
     addGameMessage,
     setGameStatus,
     setScoreCard,
+    setLatestScore,
+    setUserRank,
     setLeaderboard,
     setGameLoading,
     setGameError,
