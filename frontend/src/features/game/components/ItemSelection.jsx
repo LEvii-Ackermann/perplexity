@@ -3,7 +3,7 @@ import { useGame } from "../hooks/useGame.js";
 import keyboardImg from "../../../assets/Keyboard-Background-PNG-Image.webp";
 
 export default function ItemSelection() {
-  const { handleSelectProduct, loading } = useGame();
+  const { handleSelectProduct, handleFetchLeaderboard, loading } = useGame();
   const handleStart = () => handleSelectProduct("Mechanical Keyboard", 50000);
 
   return (
@@ -17,10 +17,28 @@ export default function ItemSelection() {
           background: repeating-linear-gradient(-55deg, transparent, transparent 40px, rgba(255,200,0,0.018) 40px, rgba(255,200,0,0.018) 41px); }
         .cta-deal:hover { transform: translate(-2px,-2px) !important; box-shadow: 7px 7px 0 #e63c2f !important; }
         .cta-deal:active { transform: translate(2px,2px) !important; box-shadow: 2px 2px 0 #e63c2f !important; }
+        .cta-board:hover { border-color: rgba(255,200,0,0.7) !important; color: #ffc800 !important; transform: translateY(-1px); }
       `}</style>
 
       {/* Stripe bg */}
       <div className="stripe-bg absolute inset-0 pointer-events-none" />
+
+      {/* Top-right leaderboard button */}
+      <div className="absolute top-6 right-6 z-30">
+        <button
+          className="cta-board bebas text-[0.86rem] tracking-[3px] px-5 py-2 rounded-sm cursor-pointer transition-all duration-100"
+          onClick={handleFetchLeaderboard}
+          disabled={loading}
+          style={{
+            background: "rgba(10,10,10,0.72)",
+            color: "rgba(255,255,255,0.7)",
+            border: "1px solid rgba(255,255,255,0.18)",
+            backdropFilter: "blur(3px)",
+          }}
+        >
+          LEADERBOARD ↗
+        </button>
+      </div>
 
       {/* ── LEFT PANEL ── */}
       <div className="relative z-10 flex flex-col justify-center px-12 py-16 border-r border-white/[0.06]">
@@ -79,7 +97,7 @@ export default function ItemSelection() {
 
         {/* CTA */}
         <button
-          className="cta-deal bebas text-[1.3rem] tracking-[5px] px-14 py-4 rounded-sm border-none cursor-pointer transition-all duration-100"
+          className="cta-deal bebas text-[1.3rem] tracking-[5px] px-14 py-4 rounded-sm border-none cursor-pointer transition-all duration-100 mb-3"
           onClick={handleStart}
           disabled={loading}
           style={{ background: "#ffc800", color: "#0a0a0a", boxShadow: "5px 5px 0 #e63c2f" }}>
