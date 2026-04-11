@@ -55,8 +55,9 @@ const getRecentMessages = (messages, limit = 6) => {
 };
 
 // function to extract offer from user message
-const isDealAccepted = (offer, lastAiPrice) => {
-  return offer !== null && lastAiPrice !== null && offer === lastAiPrice;
+const isDealAccepted = (offer, aiPrice) => {
+  if (!offer || !aiPrice) return false;
+  return Math.abs(offer - aiPrice) <= aiPrice * 0.03; // 3% tolerance
 };
 
 // function to extract price from text and determine if it's an offer
@@ -169,6 +170,37 @@ const getFallbackReply = (game) => {
   return "Network issue hai bhai, thoda baad try karo";
 };
 
+const checkRounds = async (game, req, res, gameId) => {
+  if (game.rounds >= game.maxRounds) {
+    const finalPrice =
+      game.lastAiPrice ?? Math.floor(game.originalPrice * 0.9);
+
+    const score = calculateScore(game.originalPrice, finalPrice);
+
+    const scoreCard = await scoreModel.create({
+      user: req.user.id,
+      product: game.product,
+      originalPrice: game.originalPrice,
+      finalPrice,
+      attempts: game.rounds,
+      score,
+    });
+
+    delete games[gameId];
+
+    res.json({
+      reply: game.language === "english"
+        ? `Time's up! Seller sticks to ₹${finalPrice} 😄`
+        : `Time khatam! Seller ₹${finalPrice} se niche nahi gaya 😄`,
+      status: "completed",
+      scoreCard,
+    });
+
+    return true; 
+  }
+
+  return false; 
+};
 
 
 /**
@@ -210,6 +242,10 @@ export const sendMessage = async (req, res, next) => {
     // 1. Add user message
     game.messages.push({ role: "user", content: message });
     game.rounds++;
+
+    if (game.rounds > game.maxRounds) {
+      return await checkRounds(game, req, res, gameId);
+    }
 
     //  OFFER COMPULSORY
     if (offer === null || isNaN(offer)) {
@@ -257,32 +293,6 @@ export const sendMessage = async (req, res, next) => {
       });
     }
 
-    //  END AFTER MAX ROUNDS
-    if (game.rounds >= game.maxRounds) {
-      const finalPrice = game.lastOffer;
-
-      const score = calculateScore(game.originalPrice, finalPrice);
-
-      const scoreCard = await scoreModel.create({
-        user: req.user.id,
-        product: game.product,
-        originalPrice: game.originalPrice,
-        finalPrice: offer,
-        attempts: game.rounds,
-        score
-      });
-
-      delete games[gameId];
-
-      return res.json({
-        reply: game.language === "english"
-          ? `Last round! Your final offer ₹${finalPrice} is recorded.`
-          : `Last round tha bhai, ₹${finalPrice} lock kar diya 😄`,
-        status: "completed",
-        scoreCard
-      });
-    }
-
     // 6. AI reply
     let aiReply;
 
@@ -295,15 +305,19 @@ export const sendMessage = async (req, res, next) => {
     // 7. unrealistic drop check
     const aiPriceCheck = getOffer(aiReply);
 
-    if (aiPriceCheck !== null && game.lastAiPrice !== null) {
-        const maxDrop = game.lastAiPrice * 0.3;
+    if (
+      game.rounds < game.maxRounds &&  
+      aiPriceCheck !== null &&
+      game.lastAiPrice !== null
+    ) {
+      const maxDrop = game.lastAiPrice * 0.3;
 
-        if (game.lastAiPrice - aiPriceCheck > maxDrop) {
-            return res.json({
-                reply: "Arey itna bhi nahi girta bhai 😅",
-                status: "ongoing"
-            });
-        }
+      if (game.lastAiPrice - aiPriceCheck > maxDrop) {
+        return res.json({
+          reply: "Arey itna bhi nahi girta bhai 😅",
+          status: "ongoing"
+        });
+      }
     }
 
     // 8. save AI
@@ -327,7 +341,7 @@ export const sendMessage = async (req, res, next) => {
         user: req.user.id,
         product: game.product,
         originalPrice: game.originalPrice,
-        finalPrice: offer,
+        finalPrice: finalPrice,
         attempts: game.rounds,
         score
       });
@@ -340,6 +354,10 @@ export const sendMessage = async (req, res, next) => {
         scoreCard
       });
     }
+
+    //  END AFTER MAX ROUNDS
+    const roundCheck = await checkRounds(game, req, res, gameId);
+    if (roundCheck) return;
 
     return res.json({
       reply: aiReply,
