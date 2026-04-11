@@ -49,21 +49,28 @@ const LogoutIcon = () => (
   </svg>
 );
 const CopyIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-  >
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1-2 2h9a2 2 0 0 1 2 2v1"></path>
   </svg>
 );
 
-// ── Suggestions ───────────────────────────────────────────────────────────────
-const SUGGESTIONS = [
-  { icon: "✦", label: "Write a Python script", prompt: "Write a Python script to read a CSV file and print a summary of its contents" },
-  { icon: "✉", label: "Draft an email", prompt: "Draft a professional email to my team announcing a project deadline extension" },
-  { icon: "✎", label: "Summarize an article", prompt: "Summarize the key points of an article I'll paste below" },
-  { icon: "⚡", label: "Explain a concept", prompt: "Explain how large language models work in simple terms" },
-  { icon: "⊞", label: "Make a to-do list", prompt: "Create a prioritized weekly to-do list for a software developer" },
-  { icon: "↗", label: "Research a topic", prompt: "What are the latest trends in artificial intelligence for 2026?" },
+// ── Capabilities & Suggestions ────────────────────────────────────────────────
+const CAPABILITIES = [
+  { label: "Search the internet", tool: "search_internet" },
+  { label: "Run code",            tool: "run_code"         },
+  { label: "Manage files",        tool: "file_system"      },
+  { label: "Send emails",         tool: "sendEmail"        },
+  { label: "Edit files",          tool: "file_editor"      },
+];
+
+const QUICK_SUGGESTIONS = [
+  { icon: "🌐", label: "Find current sources",  tool: "internet",     prompt: "Find the latest reliable sources on autonomous coding agents and summarize the key findings." },
+  { icon: "💻", label: "Run a script",           tool: "code",         prompt: "Write and run a JavaScript snippet that checks whether an array contains duplicates." },
+  { icon: "✉️", label: "Draft and send",         tool: "email",        prompt: "Draft and send a professional follow-up email to the product team about the release timeline." },
+  { icon: "📁", label: "Create project files",   tool: "file system",  prompt: "Create a folder structure for a new React feature and list the files." },
+  { icon: "✏️", label: "Patch a component",      tool: "file editor",  prompt: "Update an existing React component to match the new suggestion system design." },
+  { icon: "🔍", label: "Research a topic",       tool: "internet",     prompt: "Research the latest 2026 trends in AI developer tools and give me a concise summary." },
 ];
 
 // ── Styles ────────────────────────────────────────────────────────────────────
@@ -99,10 +106,23 @@ const STYLES = `
   .chat-item:hover .del-btn { opacity:1; }
   .chat-item .del-btn:hover { background:rgba(255,80,80,0.15); color:#ff6b6b; }
 
-  .suggestion-card { display:flex; align-items:center; gap:10px; padding:11px 14px; border-radius:10px; border:1px solid var(--border); background:var(--surface2); cursor:pointer; transition:border-color 0.15s, background 0.15s; text-align:left; width:100%; }
-  .suggestion-card:hover { border-color:var(--border2); background:var(--surface3); }
-  .suggestion-card .s-icon { font-size:0.85rem; color:var(--muted2); flex-shrink:0; width:18px; text-align:center; }
-  .suggestion-card .s-label { font-size:0.78rem; color:var(--muted2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  /* Capability pills */
+  .cap-pills { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; }
+  .cap-pill { display:flex; align-items:center; gap:6px; padding:5px 12px; border-radius:99px; border:1px solid var(--border); background:var(--surface2); font-size:0.72rem; color:var(--muted2); white-space:nowrap; }
+  .cap-pill-dot { width:5px; height:5px; border-radius:50%; background:var(--accent); opacity:0.65; flex-shrink:0; }
+
+  /* Quick suggestion grid */
+  .sug-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; }
+  .sug-card { display:flex; align-items:center; gap:9px; padding:10px 13px; border-radius:10px; border:1px solid var(--border); background:var(--surface2); cursor:pointer; transition:border-color 0.15s, background 0.15s; text-align:left; width:100%; }
+  .sug-card:hover { border-color:var(--border2); background:var(--surface3); }
+  .sug-card .sug-icon { font-size:0.85rem; flex-shrink:0; }
+  .sug-card .sug-text { font-size:0.77rem; color:var(--muted2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .sug-card .sug-tool { font-size:0.62rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.07em; margin-top:1px; }
+
+  /* Divider */
+  .divider { display:flex; align-items:center; gap:10px; }
+  .divider-line { flex:1; height:1px; background:var(--border); }
+  .divider-text { font-size:0.65rem; color:var(--muted); letter-spacing:0.06em; text-transform:uppercase; }
 
   .msg-bot { background:var(--surface2); border:1px solid var(--border); border-radius:16px 16px 16px 4px; padding:14px 18px; }
   .msg-user { background:rgba(255,255,255,0.06); border:1px solid var(--border); border-radius:16px 16px 4px 16px; padding:11px 15px; font-size:0.875rem; line-height:1.72; }
@@ -112,9 +132,7 @@ const STYLES = `
 
   .chat-prose p { line-height:1.78; margin-bottom:0.55em; font-size:0.875rem; }
   .chat-prose p:last-child { margin-bottom:0; }
-  .msg-user .chat-prose {
-    white-space: pre-wrap;
-  }
+  .msg-user .chat-prose { white-space: pre-wrap; }
   .chat-prose pre { border-radius:10px; overflow:hidden; margin:0.75em 0; }
   .chat-prose ul,.chat-prose ol { padding-left:1.4em; margin-bottom:0.6em; font-size:0.875rem; line-height:1.78; }
   .chat-prose li { margin-bottom:0.2em; }
@@ -140,8 +158,8 @@ const STYLES = `
   .new-chat-btn:hover { background:rgba(255,255,255,0.05); color:var(--text); border-color:var(--border2); }
   .new-chat-btn .text { transform: translateY(1.46px); font-size:0.8rem; margin-left: 2px;}
 
-  .game-mode-btn { font-size:0.72rem; font-weight:500; color:var(--muted2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; border:1px solid var(--border); background:transparent; padding:6px 12px; border-radius:8px; cursor:pointer; transition:background 0.15s,color 0.15s,border-color 0.15s; }
-  .game-mode-btn:hover { background:rgba(255,255,255,0.05); color:var(--text); border-color:var(--border2); }
+  .game-mode-btn { font-size:0.72rem; font-weight:500; color:var(--accent); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; border:1px solid var(--accent-border); background:var(--accent-dim); padding:6px 12px; border-radius:8px; cursor:pointer; transition:background 0.15s,color 0.15s,border-color 0.15s; }
+  .game-mode-btn:hover { background:rgba(249,115,22,0.2); border-color:rgba(249,115,22,0.4); }
 
   .input-wrap { border:1px solid var(--border2); border-radius:var(--radius); background:var(--surface2); transition:border-color 0.2s,box-shadow 0.2s; padding:10px 12px; display:flex; align-items:flex-end; gap:10px; }
   .input-wrap:focus-within { border-color:rgba(249,115,22,0.35); box-shadow:0 0 0 3px rgba(249,115,22,0.07); }
@@ -150,7 +168,7 @@ const STYLES = `
 
   .input-wrap-lg { border:1px solid var(--border2); border-radius:16px; background:var(--surface2); transition:border-color 0.2s,box-shadow 0.2s; padding:14px 16px; display:flex; align-items:flex-end; gap:10px; }
   .input-wrap-lg:focus-within { border-color:rgba(249,115,22,0.35); box-shadow:0 0 0 4px rgba(249,115,22,0.07); }
-  .input-wrap-lg textarea { flex:1; background:transparent; border:none; outline:none; resize:none; color:var(--text); font-family:'Sora',sans-serif; font-size:0.95rem; line-height:1.6; max-height:160px; }
+  .input-wrap-lg textarea { flex:1; background:transparent; border:none; outline:none; resize:none; color:var(--text); font-family:'Sora',sans-serif; font-size:0.875rem; line-height:1.6; max-height:160px; }
   .input-wrap-lg textarea::placeholder { color:var(--muted); }
 
   .user-profile { display:flex; align-items:center; gap:9px; padding:9px 10px; border-radius:9px; cursor:default; }
@@ -167,22 +185,15 @@ const STYLES = `
 function StyleInjector() {
   useEffect(() => {
     const id = "naved-styles-v2";
-
     let el = document.getElementById(id);
-
     if (!el) {
       el = document.createElement("style");
       el.id = id;
       el.textContent = STYLES;
       document.head.appendChild(el);
     }
-
-    // ✅ CLEANUP (IMPORTANT)
-    return () => {
-      el.remove();
-    };
+    return () => { el.remove(); };
   }, []);
-
   return null;
 }
 
@@ -210,10 +221,7 @@ export default function ChatDashboard() {
 
   useEffect(() => {
     if (messages.length > 0 && messages[messages.length - 1].role === "user") {
-      lastUserMessageRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-      });
+      lastUserMessageRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }, [messages]);
 
@@ -233,12 +241,8 @@ export default function ChatDashboard() {
     const messageText = input.trim();
     setInput("");
     await handleSendMessage({ message: messageText, chatId: currentChatId });
-
     setTimeout(() => {
-      lastUserMessageRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-      });
+      lastUserMessageRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 50);
   };
 
@@ -250,7 +254,7 @@ export default function ChatDashboard() {
     setInput(prompt);
     setTimeout(() => {
       const ta = lgTextareaRef.current;
-      if (ta) { ta.focus(); ta.style.height = "auto"; ta.style.height = Math.min(ta.scrollHeight, 160) + "px"; }
+      if (ta) { ta.focus(); ta.style.height = "auto"; ta.style.height = Math.min(ta.scrollHeight, 160) + "px"; ta.selectionStart = ta.selectionEnd = ta.value.length;}
     }, 0);
   };
 
@@ -260,9 +264,7 @@ export default function ChatDashboard() {
   };
 
   useEffect(() => {
-    if (!loading && !user) {
-      navigate("/login", { replace: true });
-    }
+    if (!loading && !user) { navigate("/login", { replace: true }); }
   }, [loading, user, navigate]);
 
   const userInitial = user?.username?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || "U";
@@ -284,17 +286,7 @@ export default function ChatDashboard() {
           display: "flex", flexDirection: "column",
         }}>
           <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              padding: "11px 16px",
-              borderBottom: "1px solid var(--border)",
-              height: "53px",
-              fontSize: "0.85rem",
-              fontWeight: "600",
-              color: "var(--text)",
-              cursor: "pointer",
-            }}
+            style={{ display: "flex", alignItems: "center", padding: "11px 16px", borderBottom: "1px solid var(--border)", height: "53px", fontSize: "0.85rem", fontWeight: "600", color: "var(--text)", cursor: "pointer" }}
             onClick={handleNewChat}
           >
             Naved AI
@@ -320,7 +312,6 @@ export default function ChatDashboard() {
             ))}
           </div>
 
-          {/* User profile bottom */}
           <div style={{ padding: "8px 10px 12px", borderTop: "1px solid var(--border)", flexShrink: 0 }}>
             <div className="user-profile">
               <div className="user-avatar">{userInitial}</div>
@@ -350,8 +341,9 @@ export default function ChatDashboard() {
           {/* ── Empty / Welcome State ── */}
           {!hasMessages ? (
             <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "32px 24px", overflowY: "auto" }}>
-              <div style={{ width: "100%", maxWidth: "640px", display: "flex", flexDirection: "column", gap: "24px" }}>
+              <div style={{ width: "100%", maxWidth: "640px", display: "flex", flexDirection: "column", gap: "22px" }}>
 
+                {/* Title */}
                 <div style={{ textAlign: "center" }}>
                   <h1 style={{ fontSize: "clamp(1.8rem, 4vw, 2.6rem)", fontWeight: "600", color: "var(--text)", letterSpacing: "-0.03em", lineHeight: 1.15 }}>
                     Ask anything.
@@ -361,7 +353,17 @@ export default function ChatDashboard() {
                   </p>
                 </div>
 
-                {/* Large centered input */}
+                {/* Capability pills */}
+                <div className="cap-pills">
+                  {CAPABILITIES.map((cap) => (
+                    <div key={cap.tool} className="cap-pill">
+                      <div className="cap-pill-dot" />
+                      {cap.label}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Input — original large style */}
                 <div className="input-wrap-lg">
                   <textarea
                     ref={lgTextareaRef}
@@ -376,15 +378,26 @@ export default function ChatDashboard() {
                   </button>
                 </div>
 
-                {/* Suggestion grid */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
-                  {SUGGESTIONS.map((s, i) => (
-                    <button key={i} className="suggestion-card" onClick={() => fillSuggestion(s.prompt)}>
-                      <span className="s-icon">{s.icon}</span>
-                      <span className="s-label">{s.label}</span>
+                {/* Divider */}
+                <div className="divider">
+                  <div className="divider-line" />
+                  <span className="divider-text">Try asking</span>
+                  <div className="divider-line" />
+                </div>
+
+                {/* Flat 2-row suggestion grid */}
+                <div className="sug-grid">
+                  {QUICK_SUGGESTIONS.map((s) => (
+                    <button key={s.label} className="sug-card" onClick={() => fillSuggestion(s.prompt)}>
+                      <span className="sug-icon">{s.icon}</span>
+                      <div style={{ overflow: "hidden" }}>
+                        <div className="sug-text">{s.label}</div>
+                        <div className="sug-tool">{s.tool}</div>
+                      </div>
                     </button>
                   ))}
                 </div>
+
               </div>
             </div>
           ) : (
@@ -399,7 +412,9 @@ export default function ChatDashboard() {
                       </div>
                       <div style={{ maxWidth: "calc(100% - 42px)" }}>
                         {msg.role === "user" ? (
-                          <div ref={index === messages.length - 1 ? lastUserMessageRef : null} className="msg-user"><div className="chat-prose">{msg.content}</div></div>
+                          <div ref={index === messages.length - 1 ? lastUserMessageRef : null} className="msg-user">
+                            <div className="chat-prose">{msg.content}</div>
+                          </div>
                         ) : (
                           <div className="chat-prose" style={{ padding: "4px 0" }}>
                             <ReactMarkdown
@@ -412,48 +427,25 @@ export default function ChatDashboard() {
                                 code({ inline, className, children }) {
                                   const match = /language-(\w+)/.exec(className || "");
                                   const language = match ? match[1] : "javascript";
-
                                   return !inline ? (
                                     <div style={{ position: "relative" }}>
                                       <button
                                         onClick={() => navigator.clipboard.writeText(children)}
-                                        style={{
-                                          position: "absolute",
-                                          top: "6px",
-                                          right: "6px",
-                                          background: "rgba(255,255,255,0.08)",
-                                          border: "1px solid rgba(255,255,255,0.15)",
-                                          borderRadius: "6px",
-                                          padding: "4px",
-                                          cursor: "pointer",
-                                          display: "flex",
-                                          alignItems: "center",
-                                          justifyContent: "center",
-                                          color: "#ccc",
-                                        }}
-                                        onMouseEnter={(e) => {
-                                          e.currentTarget.style.background = "rgba(255,255,255,0.15)";
-                                          e.currentTarget.style.color = "#fff";
-                                        }}
-                                        onMouseLeave={(e) => {
-                                          e.currentTarget.style.background = "rgba(255,255,255,0.08)";
-                                          e.currentTarget.style.color = "#ccc";
-                                        }}
+                                        style={{ position: "absolute", top: "6px", right: "6px", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "6px", padding: "4px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#ccc" }}
+                                        onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.15)"; e.currentTarget.style.color = "#fff"; }}
+                                        onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.color = "#ccc"; }}
                                       >
                                         <CopyIcon />
                                       </button>
-
                                       <SyntaxHighlighter style={oneDark} language={language}>
                                         {String(children).replace(/\n$/, "")}
                                       </SyntaxHighlighter>
                                     </div>
                                   ) : (
-                                        <code
-                                          style={{background: "rgba(255,255,255,0.08)", padding: "2px 6px", borderRadius: "4px", fontSize: "0.8rem", fontFamily: "monospace",}}
-                                        >
-                                          {children}
-                                        </code>
-                                      );
+                                    <code style={{ background: "rgba(255,255,255,0.08)", padding: "2px 6px", borderRadius: "4px", fontSize: "0.8rem", fontFamily: "monospace" }}>
+                                      {children}
+                                    </code>
+                                  );
                                 },
                               }}
                             >
@@ -465,7 +457,6 @@ export default function ChatDashboard() {
                     </div>
                   ))}
 
-                  {/* Typing indicator */}
                   {loading && (
                     <div className="msg-appear" style={{ display: "flex", gap: "11px", alignItems: "flex-start" }}>
                       <div className="avatar avatar-bot"><BotIcon /></div>
