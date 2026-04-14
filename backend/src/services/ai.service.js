@@ -12,7 +12,23 @@ import { sendEmail } from "./mail.service.js";
 import { runCode } from "../tools/codeTool.js";
 import { fileSystemTool } from "../tools/fileSystemTool.js";
 import { fileEditorTool } from "../tools/fileEditorTool.js";
+import { SlidingWindowRateLimiter } from "../utils/slidingWindowRateLimiter.js";
 import * as z from "zod";
+
+const MAX_TOOL_CALLS_PER_REQUEST = 3;
+
+function createRequestToolCallLimiter(maxCalls = MAX_TOOL_CALLS_PER_REQUEST) {
+  let toolCalls = 0;
+
+  return async (request, handler) => {
+    if (toolCalls >= maxCalls) {
+      throw new Error("Tool call limit exceeded for this request.");
+    }
+
+    toolCalls += 1;
+    return handler(request);
+  };
+}
 
 //live search tool
 const searchTool = new TavilySearch({
@@ -26,25 +42,39 @@ const searchTool = new TavilySearch({
 const codeExecutionTool = tool(runCode, {
   name: "run_code",
   description:
-    "Execute code in different programming languages and return output",
+    "Execute JavaScript code in a restricted sandbox and return output",
   schema: z.object({
     code: z.string().describe("The code to execute"),
     language: z
-      .string()
-      .describe("Programming language like java, python, javascript, cpp"),
+      .enum(["javascript", "js"])
+      .default("javascript")
+      .describe("Allowed language: javascript"),
   }),
 });
 
-//sendEmailTool
-const sendingEmailTool = tool(sendEmail, {
-  name: "sendEmail",
-  description: "A tool to send email ",
-  schema: z.object({
-    to: z.string().describe("Recipient's email address"),
-    subject: z.string().describe("Subject of the email"),
-    html: z.string().describe("HTML content of the email"),
-  }),
+const emailRateLimiter = new SlidingWindowRateLimiter({
+  maxRequests: 5,
+  windowMs: 15 * 60 * 1000,
 });
+
+function createSendingEmailTool(userId) {
+  return tool(async (payload) => {
+    if (!userId) {
+      throw new Error("User not found for email tool execution.");
+    }
+
+    emailRateLimiter.consume(userId.toString());
+    return sendEmail(payload);
+  }, {
+    name: "sendEmail",
+    description: "A tool to send email ",
+    schema: z.object({
+      to: z.string().describe("Recipient's email address"),
+      subject: z.string().describe("Subject of the email"),
+      html: z.string().describe("HTML content of the email"),
+    }),
+  });
+}
 
 //fileSystemTool
 const fileTool = tool(fileSystemTool, {
@@ -95,11 +125,27 @@ export const mistralModel = new ChatMistralAI({
   streaming: false,
 });
 
-//agent created to use the tools
-const agent = createAgent({
-  model: mistralModel,
-  tools: [searchTool, sendingEmailTool, codeExecutionTool, fileTool, fileEditor],
-  systemPrompt: `
+function createChatAgent(userId) {
+  const limitToolCall = createRequestToolCallLimiter();
+
+  return createAgent({
+    model: mistralModel,
+    tools: [
+      searchTool,
+      createSendingEmailTool(userId),
+      codeExecutionTool,
+      fileTool,
+      fileEditor,
+    ],
+    middleware: [
+      {
+        name: "request_tool_call_limiter",
+        wrapToolCall: async (request, handler) => {
+          return limitToolCall(request, handler);
+        },
+      },
+    ],
+    systemPrompt: `
     You are an AI assistant with access to tools.
 
     IMPORTANT RULES:
@@ -145,10 +191,11 @@ const agent = createAgent({
     - Use best possible query in first attempt
     - Then summarize results clearly
 `,
-});
+  });
+}
 
 //main function which is used to generate the responses
-export async function generateResponse(messages) {
+export async function generateResponse(messages, userId) {
   const formattedMessages = messages
     .map((msg) => {
       if (msg.role === "user") return new HumanMessage(msg.content);
@@ -156,6 +203,8 @@ export async function generateResponse(messages) {
       return null;
     })
     .filter(Boolean);
+
+  const agent = createChatAgent(userId);
 
   const response = await agent.invoke({
     messages: formattedMessages,

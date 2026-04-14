@@ -1,37 +1,75 @@
-import axios from "axios";
+import vm from "node:vm";
 
-const languageMap = {
-  javascript: 63,
-  python: 71,
-  java: 62,
-  cpp: 54,
-};
+const MAX_EXECUTION_MS = 2500;
+const MAX_OUTPUT_CHARS = 4000;
+const ALLOWED_LANGUAGES = new Set(["javascript", "js"]);
+
+function limitOutput(text = "") {
+  if (text.length <= MAX_OUTPUT_CHARS) {
+    return text;
+  }
+
+  return `${text.slice(0, MAX_OUTPUT_CHARS)}\n... output truncated ...`;
+}
 
 export const runCode = async ({ code, language }) => {
   try {
-    const response = await axios.post(
-      "https://ce.judge0.com/submissions?base64_encoded=false&wait=true",
-      {
-        source_code: code,
-        language_id: languageMap[language],
-      },
-    );
+    const normalizedLanguage = String(language || "javascript").toLowerCase();
 
-    if (response.data.stdout) {
-      return response.data.stdout;
+    if (!ALLOWED_LANGUAGES.has(normalizedLanguage)) {
+      throw new Error("Only JavaScript execution is allowed.");
     }
 
-    if (response.data.stderr) {
-      return response.data.stderr;
-    }
+    const logs = [];
+    const errors = [];
 
-    if (response.data.compile_output) {
-      return response.data.compile_output;
-    }
+    const sandboxConsole = {
+      log: (...args) => logs.push(args.map(String).join(" ")),
+      info: (...args) => logs.push(args.map(String).join(" ")),
+      warn: (...args) => logs.push(args.map(String).join(" ")),
+      error: (...args) => errors.push(args.map(String).join(" ")),
+    };
 
-    return "No output";
+    const sandbox = {
+      console: sandboxConsole,
+      process: undefined,
+      require: undefined,
+      global: undefined,
+      Buffer: undefined,
+      Function: undefined,
+      eval: undefined,
+      setImmediate: undefined,
+      setInterval: undefined,
+      setTimeout: undefined,
+    };
+
+    const context = vm.createContext(sandbox);
+    const wrappedCode = `
+      (async () => {
+        "use strict";
+        ${code}
+      })()
+    `;
+
+    const script = new vm.Script(wrappedCode);
+    const executionPromise = script.runInContext(context, {
+      timeout: MAX_EXECUTION_MS,
+      displayErrors: false,
+    });
+
+    await Promise.race([
+      executionPromise,
+      new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error("Execution timed out."));
+        }, MAX_EXECUTION_MS + 100);
+      }),
+    ]);
+
+    const output = [...logs, ...errors].join("\n").trim();
+    return limitOutput(output || "No output");
   } catch (error) {
-    console.error("Execution error:", error.message);
-    return { error: "Execution failed" };
+    const safeMessage = error?.message || "Execution failed";
+    return `Execution error: ${limitOutput(safeMessage)}`;
   }
 };

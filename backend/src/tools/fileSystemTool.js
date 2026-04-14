@@ -1,7 +1,57 @@
 import fs from "fs/promises";
 import path from "path";
+import { fileURLToPath } from "url";
 
-const BASE_DIR = path.resolve(process.cwd(), "../sandbox");
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const BASE_DIR = path.resolve(__dirname, "../../../sandbox");
+
+function ensureInsideSandbox(resolvedPath) {
+  const relativePath = path.relative(BASE_DIR, resolvedPath);
+
+  if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
+    throw new Error("Access Denied: Invalid Path");
+  }
+}
+
+async function ensureNotSymlink(targetPath, { allowMissing = false } = {}) {
+  try {
+    const stats = await fs.lstat(targetPath);
+
+    if (stats.isSymbolicLink()) {
+      throw new Error("Access Denied: Symbolic links are not allowed");
+    }
+  } catch (error) {
+    if (allowMissing && error?.code === "ENOENT") {
+      return;
+    }
+
+    throw error;
+  }
+}
+
+async function getSafePath(filePath, { checkParentWhenMissing = false } = {}) {
+  if (!filePath) {
+    throw new Error("filePath is required");
+  }
+
+  const resolvedPath = path.resolve(BASE_DIR, filePath);
+  ensureInsideSandbox(resolvedPath);
+
+  try {
+    await ensureNotSymlink(resolvedPath);
+  } catch (error) {
+    if (!(checkParentWhenMissing && error?.code === "ENOENT")) {
+      throw error;
+    }
+
+    const parentPath = path.dirname(resolvedPath);
+    ensureInsideSandbox(parentPath);
+    await ensureNotSymlink(parentPath);
+  }
+
+  return resolvedPath;
+}
 
 const init = async () => {
   try {
@@ -15,17 +65,10 @@ init();
 
 export const fileSystemTool = async ({ action, filePath, content, newPath }) => {
   try {
-
-    if (!filePath) {
-      throw new Error("filePath is required");
-    }
-
-
-    const fullPath = path.resolve(BASE_DIR, filePath);
-
-    if (!fullPath.startsWith(BASE_DIR)) {
-      throw new Error("Access Denied: Invalid Path");
-    }
+    const fullPath = await getSafePath(filePath, {
+      checkParentWhenMissing:
+        action === "create_folder" || action === "create_file",
+    });
 
     if (action === "create_folder") {
       await fs.mkdir(fullPath, { recursive: true });
@@ -64,11 +107,13 @@ export const fileSystemTool = async ({ action, filePath, content, newPath }) => 
     }
 
     if (action === "rename") {
-      const newFullPath = path.resolve(BASE_DIR, newPath); 
-
-      if (!newFullPath.startsWith(BASE_DIR)) {
-        throw new Error("Access Denied: Invalid Path");
+      if (!newPath) {
+        throw new Error("newPath is required for rename");
       }
+
+      const newFullPath = await getSafePath(newPath, {
+        checkParentWhenMissing: true,
+      });
 
       await fs.mkdir(path.dirname(newFullPath), { recursive: true });
       await fs.rename(fullPath, newFullPath);

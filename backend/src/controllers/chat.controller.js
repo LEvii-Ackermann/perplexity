@@ -40,7 +40,7 @@ export async function sendMessageController (req, res, next) {
     const messages = await messageModel.find({chat: chatId || chat._id}).sort({ createdAt: 1 }).lean()
     console.log("Messages:  ", messages)
 
-    const result = await generateResponse(messages)
+    const result = await generateResponse(messages, req.user.id)
 
     const aiMessage = await messageModel.create({
         chat: chatId || chat._id,
