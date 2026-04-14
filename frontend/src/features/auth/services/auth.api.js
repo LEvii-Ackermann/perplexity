@@ -1,7 +1,8 @@
 import axios from "axios"
+import { API_BASE_URL } from "../../../app/api.config.js"
 
 const api = axios.create({
-    baseURL: "http://localhost:3000",
+    baseURL: API_BASE_URL,
     withCredentials: true
 })
 
@@ -21,7 +22,7 @@ export async function login ({email, password}) {
 }
 
 export function googleAuth() {
-    window.location.href = "http://localhost:3000/api/auth/google"
+    window.location.href = `${API_BASE_URL}/api/auth/google`
 }
 
 export async function getMe (){

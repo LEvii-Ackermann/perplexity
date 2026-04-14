@@ -30,7 +30,7 @@ app.use(passport.initialize())
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID_OATH,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET_OATH,
-    callbackURL: "${process.env.BASE_URL}/api/auth/google/callback"
+    callbackURL: `${process.env.BASE_URL}/api/auth/google/callback`
 }, (_,__, profile, done) => {
     return done(null, profile)
 }))
