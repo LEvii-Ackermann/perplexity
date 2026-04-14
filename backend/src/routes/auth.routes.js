@@ -6,6 +6,7 @@ import passport from "passport"
 import { Strategy as GoogleStrategy} from "passport-google-oauth20"
 
 const authRouter = express.Router()
+const frontendBaseUrl = process.env.FRONTEND_URL || process.env.BASE_URL || "http://localhost:5173"
 
 /**
  * @route POST /api/auth/register
@@ -50,7 +51,7 @@ authRouter.get('/google',
 );
 
 authRouter.get('/google/callback',
-  passport.authenticate('google', { session: false, failureRedirect: 'http://localhost:5173/login' }),
+  passport.authenticate('google', { session: false, failureRedirect: `${frontendBaseUrl}/login` }),
   googleAuthController
 );
 

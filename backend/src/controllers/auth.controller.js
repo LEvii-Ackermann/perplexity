@@ -8,6 +8,16 @@ import { success } from "zod"
 
 dotenv.config() 
 
+const frontendBaseUrl = process.env.FRONTEND_URL || process.env.BASE_URL || "http://localhost:5173"
+const apiBaseUrl = process.env.BASE_URL || "http://localhost:3000"
+const isProd = process.env.NODE_ENV === "production"
+
+const authCookieOptions = {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? "none" : "lax"
+}
+
 export async function registerController (req, res, next) {
     const { username, email, password } = req.body
 
@@ -52,7 +62,7 @@ export async function registerController (req, res, next) {
             <p>Hi ${username},</p>
             <p>Thank you for registering at <strong>Perplixity</strong>. We are excited to have you on our platform.</p>
             <p>To verify your email address, please click the link below:</p>
-            <a href="http://localhost:3000/api/auth/verify-email?token=${emailVerificationToken}">Verify Email</a>
+            <a href="${apiBaseUrl}/api/auth/verify-email?token=${emailVerificationToken}">Verify Email</a>
             <p>If you did not create an account, please ignore this email.</p>
             <p>Best regards, <br>The Perplexity Team</p>
         `
@@ -90,7 +100,7 @@ export async function verifyEmailController(req, res, next){
     const html = `
         <p>Hi ${user.username},</p>
         <p>Your email has been successfully verified. You can now log in to your account and start using our services.</p>
-        <a href="http://localhost:3000/login">Login to Perplexity</a>
+        <a href="${frontendBaseUrl}/login">Login to Perplexity</a>
         <p>Best regards, <br>The Perplexity Team</p>
     `
 
@@ -146,7 +156,7 @@ export async function loginController(req, res, next){
         expiresIn: "7d"
     })
 
-    res.cookie("token", token)
+    res.cookie("token", token, authCookieOptions)
 
     res.status(200).json({
         message: "Login successful",
@@ -186,7 +196,7 @@ export async function getMeController(req, res, next){
 export async function logoutController(req, res, next){
     const token = req.cookies.token
 
-    res.clearCookie("token")
+    res.clearCookie("token", authCookieOptions)
     await redis.set(token, Date.now().toString())
 
     res.status(200).json({
@@ -246,15 +256,11 @@ export async function googleAuthController(req, res, next) {
         })
 
         // 4. Send cookie (IMPORTANT)
-        res.cookie("token", token, {
-            httpOnly: true,
-            secure: false,
-            sameSite: "lax"
-        })
+        res.cookie("token", token, authCookieOptions)
 
 
         // 5. Redirect to frontend
-        return res.redirect("http://localhost:5173/")
+        return res.redirect(`${frontendBaseUrl}/`)
 
     } catch (err) {
         console.error("Google Auth Error:", err)

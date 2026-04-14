@@ -14,13 +14,16 @@ import gameRouter from "./routes/game.routes.js"
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const allowedOrigins = [
+    "http://localhost:5173",
+    process.env.FRONTEND_URL,
+    process.env.BASE_URL
+].filter(Boolean)
+
 const app = express()
 app.use(express.json())
 app.use(cors({
-    origin: [
-        "http://localhost:5173",
-        process.env.BASE_URL
-    ],
+    origin: allowedOrigins,
     credentials: true
 }))
 app.use(cookieParser())
