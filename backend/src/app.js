@@ -44,7 +44,7 @@ app.use("/api/game", gameRouter)
 app.use(express.static(path.join(__dirname, "../public")));
 
 // Catch-all route (for React Router)
-app.get("*", (req, res) => {
+app.get("*name", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/index.html"));
 });
 
